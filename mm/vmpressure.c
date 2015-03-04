@@ -74,7 +74,7 @@ int vmpressure_notifier_unregister(struct notifier_block *nb)
 	return blocking_notifier_chain_unregister(&vmpressure_notifier, nb);
 }
 
-static void vmpressure_notify(unsigned long pressure)
+void vmpressure_notify(unsigned long pressure)
 {
 	blocking_notifier_call_chain(&vmpressure_notifier, pressure, NULL);
 }
@@ -255,8 +255,8 @@ static void vmpressure_work_fn(struct work_struct *work)
 	} while ((vmpr = vmpressure_parent(vmpr)));
 }
 
-static void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg,
-			     unsigned long scanned, unsigned long reclaimed)
+void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg,
+		unsigned long scanned, unsigned long reclaimed)
 {
 	struct vmpressure *vmpr = memcg_to_vmpressure(memcg);
 
@@ -508,7 +508,7 @@ void vmpressure_cleanup(struct vmpressure *vmpr)
 	flush_work(&vmpr->work);
 }
 
-static int __init vmpressure_global_init(void)
+int vmpressure_global_init(void)
 {
 	vmpressure_init(&global_vmpressure);
 	return 0;
