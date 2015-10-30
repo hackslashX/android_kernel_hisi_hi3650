@@ -770,6 +770,9 @@ static void blk_mq_rq_timer(unsigned long priv)
 	};
 	int i;
 
+	if (blk_queue_enter(q, GFP_NOWAIT))
+		return;
+
 	blk_mq_queue_tag_busy_iter(q, blk_mq_check_expired, &data);
 
 	if (data.next_set) {
@@ -784,6 +787,7 @@ static void blk_mq_rq_timer(unsigned long priv)
 				blk_mq_tag_idle(hctx);
 		}
 	}
+	blk_queue_exit(q);
 }
 
 /*
