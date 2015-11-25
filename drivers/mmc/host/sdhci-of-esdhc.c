@@ -352,6 +352,8 @@ static int sdhci_esdhc_probe(struct platform_device *pdev)
 {
 	struct sdhci_host *host;
 	struct device_node *np;
+	struct sdhci_pltfm_host *pltfm_host;
+	struct sdhci_esdhc *esdhc;
 	int ret;
 
 	host = sdhci_pltfm_init(pdev, &sdhci_esdhc_pdata, 0);
