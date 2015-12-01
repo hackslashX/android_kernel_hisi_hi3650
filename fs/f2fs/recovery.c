@@ -606,7 +606,7 @@ static int recover_data(struct f2fs_sb_info *sbi, int type,
 	block_t blkaddr;
 
 	/* get node pages in the current segment */
-	curseg = CURSEG_I(sbi, type);
+	curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
 	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
 
 	if (unlikely(list_empty(head)))
