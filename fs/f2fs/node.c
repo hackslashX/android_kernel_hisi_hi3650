@@ -402,6 +402,8 @@ void get_node_info(struct f2fs_sb_info *sbi, nid_t nid, struct node_info *ni)
 
 	memset(&ne, 0, sizeof(struct f2fs_nat_entry));
 
+	down_write(&nm_i->nat_tree_lock);
+
 	/* Check current segment summary */
 	down_read(&curseg->journal_rwsem);
 	i = lookup_journal_in_cursum(journal, NAT_JOURNAL, nid, 0);
@@ -1865,7 +1867,17 @@ static bool add_free_nid(struct f2fs_sb_info *sbi, nid_t nid, bool build)
 
 	/* 0 nid should not be used */
 	if (unlikely(nid == 0))
-		return false;
+		return 0;
+
+	if (build) {
+		/* do not add allocated nids */
+		ne = __lookup_nat_cache(nm_i, nid);
+		if (ne && (!get_nat_flag(ne, IS_CHECKPOINTED) ||
+				nat_get_blkaddr(ne) != NULL_ADDR))
+			allocated = true;
+		if (allocated)
+			return 0;
+	}
 
 	i = f2fs_kmem_cache_alloc(free_nid_slab, GFP_NOFS);
 	i->nid = nid;
@@ -2155,7 +2167,7 @@ static void __build_free_nids(struct f2fs_sb_info *sbi, bool sync, bool mount)
 		else
 			remove_free_nid(sbi, nid);
 	}
-	up_read(&curseg->journal_rwsem);
+	mutex_unlock(&curseg->curseg_mutex);
 	up_read(&nm_i->nat_tree_lock);
 
 	ra_meta_pages(sbi, NAT_BLOCK_OFFSET(nm_i->next_scan_nid),
@@ -2660,6 +2672,8 @@ void flush_nat_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	/* flush dirty nats in nat entry set */
 	list_for_each_entry_safe(set, tmp, &sets, set_list)
 		__flush_nat_entry_set(sbi, set, cpc);
+
+	up_write(&nm_i->nat_tree_lock);
 
 	up_write(&nm_i->nat_tree_lock);
 
