@@ -1164,18 +1164,18 @@ static int set_machine_constraints(struct regulator_dev *rdev,
 
 	ret = machine_constraints_voltage(rdev, rdev->constraints);
 	if (ret != 0)
-		goto out;
+		return ret;
 
 	ret = machine_constraints_current(rdev, rdev->constraints);
 	if (ret != 0)
-		goto out;
+		return ret;
 
 	if (rdev->constraints->ilim_uA && ops->set_input_current_limit) {
 		ret = ops->set_input_current_limit(rdev,
 						   rdev->constraints->ilim_uA);
 		if (ret < 0) {
 			rdev_err(rdev, "failed to set input limit\n");
-			goto out;
+			return ret;
 		}
 	}
 
@@ -1184,21 +1184,20 @@ static int set_machine_constraints(struct regulator_dev *rdev,
 		ret = suspend_prepare(rdev, rdev->constraints->initial_state);
 		if (ret < 0) {
 			rdev_err(rdev, "failed to set suspend state\n");
-			goto out;
+			return ret;
 		}
 	}
 
 	if (rdev->constraints->initial_mode) {
 		if (!ops->set_mode) {
 			rdev_err(rdev, "no set_mode operation\n");
-			ret = -EINVAL;
-			goto out;
+			return -EINVAL;
 		}
 
 		ret = ops->set_mode(rdev, rdev->constraints->initial_mode);
 		if (ret < 0) {
 			rdev_err(rdev, "failed to set initial mode: %d\n", ret);
-			goto out;
+			return ret;
 		}
 	}
 
@@ -1209,7 +1208,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
 		ret = _regulator_do_enable(rdev);
 		if (ret < 0 && ret != -EINVAL) {
 			rdev_err(rdev, "failed to enable\n");
-			goto out;
+			return ret;
 		}
 	}
 
@@ -1218,7 +1217,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
 		ret = ops->set_ramp_delay(rdev, rdev->constraints->ramp_delay);
 		if (ret < 0) {
 			rdev_err(rdev, "failed to set ramp_delay\n");
-			goto out;
+			return ret;
 		}
 	}
 
@@ -1226,7 +1225,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
 		ret = ops->set_pull_down(rdev);
 		if (ret < 0) {
 			rdev_err(rdev, "failed to set pull down\n");
-			goto out;
+			return ret;
 		}
 	}
 
@@ -1234,7 +1233,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
 		ret = ops->set_soft_start(rdev);
 		if (ret < 0) {
 			rdev_err(rdev, "failed to set soft start\n");
-			goto out;
+			return ret;
 		}
 	}
 
@@ -1243,16 +1242,12 @@ static int set_machine_constraints(struct regulator_dev *rdev,
 		ret = ops->set_over_current_protection(rdev);
 		if (ret < 0) {
 			rdev_err(rdev, "failed to set over current protection\n");
-			goto out;
+			return ret;
 		}
 	}
 
 	print_constraints(rdev);
 	return 0;
-out:
-	kfree(rdev->constraints);
-	rdev->constraints = NULL;
-	return ret;
 }
 
 /**
@@ -4105,7 +4100,7 @@ unset_supplies:
 
 scrub:
 	regulator_ena_gpio_free(rdev);
-	kfree(rdev->constraints);
+
 wash:
 	device_unregister(&rdev->dev);
 	/* device core frees rdev */
