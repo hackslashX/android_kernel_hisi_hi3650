@@ -990,6 +990,7 @@ void coresight_unregister(struct coresight_device *csdev)
 {
 	/* Remove references of that device in the topology */
 	coresight_remove_conns(csdev);
+	kfree(csdev->conns);
 	device_unregister(&csdev->dev);
 }
 EXPORT_SYMBOL_GPL(coresight_unregister);
