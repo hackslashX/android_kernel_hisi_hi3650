@@ -866,6 +866,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi, bool check_only)
 	err = find_fsync_dnodes(sbi, CURSEG_WARM_NODE, &regular_list, NULL);
 	if (err)
 		goto out;
+	}
 
 	if (list_empty(&dir_list) && list_empty(&regular_list))
 		goto out;

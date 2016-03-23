@@ -2981,6 +2981,15 @@ try_onemore:
 				"Need to recover fsync data");
 			goto free_kobj;
 		}
+	} else {
+		err = recover_fsync_data(sbi, true);
+
+		if (!f2fs_readonly(sb) && err > 0) {
+			err = -EINVAL;
+			f2fs_msg(sb, KERN_ERR,
+				"Need to recover fsync data");
+			goto free_kobj;
+		}
 	}
 skip_recovery:
 	/* recover_fsync_data() cleared this already */
