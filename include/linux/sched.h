@@ -2038,7 +2038,7 @@ struct task_struct {
 #endif
 	int pagefault_disabled;
 #ifdef CONFIG_MMU
-	struct task_struct *oom_reaper_list;
+	struct list_head oom_reaper_list;
 #endif
 /* CPU-specific state of this task */
 	struct thread_struct thread;
