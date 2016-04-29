@@ -245,6 +245,7 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, int type,
 		struct list_head *head, struct radix_tree_root *root)
 {
 	struct curseg_info *curseg;
+	struct inode *inode;
 	struct page *page = NULL;
 	block_t blkaddr;
 	int err = 0;
@@ -300,6 +301,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, int type,
 				break;
 			}
 
+			/* add this fsync inode to the list */
+			entry = add_fsync_inode(head, inode);
+			if (!entry) {
+				err = -ENOMEM;
+				iput(inode);
+				break;
+			}
+		}
+		entry->blkaddr = blkaddr;
+
 			/* add this fsync inode to the radix tree */
 			if (root)
 				__add_dir_entry(root, ino_of_node(page), entry);
@@ -322,6 +333,14 @@ next:
 	}
 	f2fs_put_page(page, 1);
 	return err;
+}
+
+static void destroy_fsync_dnodes(struct list_head *head)
+{
+	struct fsync_inode_entry *entry, *tmp;
+
+	list_for_each_entry_safe(entry, tmp, head, list)
+		del_fsync_inode(entry);
 }
 
 static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
