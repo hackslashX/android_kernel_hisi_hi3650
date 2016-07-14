@@ -770,12 +770,15 @@ static int pxamci_probe(struct platform_device *pdev)
 				      host->pdata->gpio_power_invert);
 	}
 	if (gpio_is_valid(gpio_ro)) {
-		ret = gpio_request(gpio_ro, "mmc card read only");
+		ret = mmc_gpio_request_ro(mmc, gpio_ro);
 		if (ret) {
-			dev_err(&pdev->dev, "Failed requesting gpio_ro %d\n", gpio_ro);
-			goto err_gpio_ro;
+			dev_err(&pdev->dev, "Failed requesting gpio_ro %d\n",
+				gpio_ro);
+			goto out;
+		} else {
+			mmc->caps2 |= host->pdata->gpio_card_ro_invert ?
+				0 : MMC_CAP2_RO_ACTIVE_HIGH;
 		}
-		gpio_direction_input(gpio_ro);
 	}
 	if (gpio_is_valid(gpio_cd)) {
 		ret = gpio_request(gpio_cd, "mmc card detect");
