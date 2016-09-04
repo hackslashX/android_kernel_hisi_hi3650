@@ -95,6 +95,7 @@ zen_expired_request(struct zen_data *zdata, int ddir)
 
         rq = rq_entry_fifo(zdata->fifo_list[ddir].next);
         if (time_after_eq(jiffies, rq->fifo_time))
+        if (time_after_eq(jiffies, (unsigned long)rq->fifo_time))
                 return rq;
 
         return NULL;
