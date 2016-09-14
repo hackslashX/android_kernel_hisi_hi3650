@@ -8489,8 +8489,11 @@ static noinline int do_walk_down(struct btrfs_trans_handle *trans,
 	ret = btrfs_lookup_extent_info(trans, root, bytenr, level - 1, 1,
 				       &wc->refs[level - 1],
 				       &wc->flags[level - 1]);
-	if (ret < 0)
-		goto out_unlock;
+	if (ret < 0) {
+		btrfs_tree_unlock(next);
+		free_extent_buffer(next);
+		return ret;
+	}
 
 	if (unlikely(wc->refs[level - 1] == 0)) {
 		btrfs_err(root->fs_info, "Missing references.");
