@@ -462,7 +462,6 @@ out:
 		 */
 		err = 0;
 
-
 	/* 2 is a special value indicating that there are no more direntries */
 	ctx->pos = 2;
 	return err;
