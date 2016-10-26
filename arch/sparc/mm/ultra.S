@@ -335,7 +335,7 @@ __hypervisor_flush_tlb_page: /* 11 insns */
 	retl
 	 nop
 
-__hypervisor_flush_tlb_pending: /* 16 insns */
+__hypervisor_flush_tlb_pending: /* 27 insns */
 	/* %o0 = context, %o1 = nr, %o2 = vaddrs[] */
 	sllx		%o1, 3, %g1
 	mov		%o2, %g2
