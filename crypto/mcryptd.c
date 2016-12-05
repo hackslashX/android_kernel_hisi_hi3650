@@ -502,7 +502,7 @@ static int mcryptd_create_hash(struct crypto_template *tmpl, struct rtattr **tb,
 	u32 mask = 0;
 	int err;
 
-	if (!mcryptd_check_internal(tb, &type, &mask));
+	if (!mcryptd_check_internal(tb, &type, &mask))
 		return -EINVAL;
 
 	salg = shash_attr_alg(tb[1], type, mask);
