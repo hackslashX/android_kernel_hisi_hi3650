@@ -1014,3 +1014,65 @@ static const struct ufs_hba_variant_ops ufs_hba_qcom_vops = {
 	.resume			= ufs_qcom_resume,
 };
 EXPORT_SYMBOL(ufs_hba_qcom_vops);
+
+/**
+ * ufs_qcom_probe - probe routine of the driver
+ * @pdev: pointer to Platform device handle
+ *
+ * Return zero for success and non-zero for failure
+ */
+static int ufs_qcom_probe(struct platform_device *pdev)
+{
+	int err;
+	struct device *dev = &pdev->dev;
+
+	/* Perform generic probe */
+	err = ufshcd_pltfrm_init(pdev, &ufs_hba_qcom_vops);
+	if (err)
+		dev_err(dev, "ufshcd_pltfrm_init() failed %d\n", err);
+
+	return err;
+}
+
+/**
+ * ufs_qcom_remove - set driver_data of the device to NULL
+ * @pdev: pointer to platform device handle
+ *
+ * Always return 0
+ */
+static int ufs_qcom_remove(struct platform_device *pdev)
+{
+	struct ufs_hba *hba =  platform_get_drvdata(pdev);
+
+	pm_runtime_get_sync(&(pdev)->dev);
+	ufshcd_remove(hba);
+	return 0;
+}
+
+static const struct of_device_id ufs_qcom_of_match[] = {
+	{ .compatible = "qcom,ufshc"},
+	{},
+};
+MODULE_DEVICE_TABLE(of, ufs_qcom_of_match);
+
+static const struct dev_pm_ops ufs_qcom_pm_ops = {
+	.suspend	= ufshcd_pltfrm_suspend,
+	.resume		= ufshcd_pltfrm_resume,
+	.runtime_suspend = ufshcd_pltfrm_runtime_suspend,
+	.runtime_resume  = ufshcd_pltfrm_runtime_resume,
+	.runtime_idle    = ufshcd_pltfrm_runtime_idle,
+};
+
+static struct platform_driver ufs_qcom_pltform = {
+	.probe	= ufs_qcom_probe,
+	.remove	= ufs_qcom_remove,
+	.shutdown = ufshcd_pltfrm_shutdown,
+	.driver	= {
+		.name	= "ufshcd-qcom",
+		.pm	= &ufs_qcom_pm_ops,
+		.of_match_table = of_match_ptr(ufs_qcom_of_match),
+	},
+};
+module_platform_driver(ufs_qcom_pltform);
+
+MODULE_LICENSE("GPL v2");
