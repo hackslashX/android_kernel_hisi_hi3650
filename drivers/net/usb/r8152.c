@@ -3452,7 +3452,6 @@ static int rtl8152_rumtime_suspend(struct r8152 *tp)
 	int ret = 0;
 
 	if (netif_running(netdev) && test_bit(WORK_ENABLE, &tp->flags)) {
-
 		u32 rcr = 0;
 
 		if (delay_autosuspend(tp)) {
