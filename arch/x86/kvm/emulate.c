@@ -799,6 +799,20 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
 	return ctxt->ops->read_std(ctxt, linear, data, size, &ctxt->exception);
 }
 
+static int segmented_write_std(struct x86_emulate_ctxt *ctxt,
+			       struct segmented_address addr,
+			       void *data,
+			       unsigned int size)
+{
+	int rc;
+	ulong linear;
+
+	rc = linearize(ctxt, addr, size, true, &linear);
+	if (rc != X86EMUL_CONTINUE)
+		return rc;
+	return ctxt->ops->write_std(ctxt, linear, data, size, &ctxt->exception);
+}
+
 /*
  * Prefetch the remaining bytes of the instruction without crossing page
  * boundary if they are not in fetch_cache yet.
@@ -3694,8 +3708,8 @@ static int emulate_store_desc_ptr(struct x86_emulate_ctxt *ctxt,
 	}
 	/* Disable writeback. */
 	ctxt->dst.type = OP_NONE;
-	return segmented_write(ctxt, ctxt->dst.addr.mem,
-			       &desc_ptr, 2 + ctxt->op_bytes);
+	return segmented_write_std(ctxt, ctxt->dst.addr.mem,
+				   &desc_ptr, 2 + ctxt->op_bytes);
 }
 
 static int em_sgdt(struct x86_emulate_ctxt *ctxt)
@@ -3876,6 +3890,131 @@ static int em_movsxd(struct x86_emulate_ctxt *ctxt)
 {
 	ctxt->dst.val = (s32) ctxt->src.val;
 	return X86EMUL_CONTINUE;
+}
+
+static int check_fxsr(struct x86_emulate_ctxt *ctxt)
+{
+	u32 eax = 1, ebx, ecx = 0, edx;
+
+	ctxt->ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx);
+	if (!(edx & FFL(FXSR)))
+		return emulate_ud(ctxt);
+
+	if (ctxt->ops->get_cr(ctxt, 0) & (X86_CR0_TS | X86_CR0_EM))
+		return emulate_nm(ctxt);
+
+	/*
+	 * Don't emulate a case that should never be hit, instead of working
+	 * around a lack of fxsave64/fxrstor64 on old compilers.
+	 */
+	if (ctxt->mode >= X86EMUL_MODE_PROT64)
+		return X86EMUL_UNHANDLEABLE;
+
+	return X86EMUL_CONTINUE;
+}
+
+/*
+ * FXSAVE and FXRSTOR have 4 different formats depending on execution mode,
+ *  1) 16 bit mode
+ *  2) 32 bit mode
+ *     - like (1), but FIP and FDP (foo) are only 16 bit.  At least Intel CPUs
+ *       preserve whole 32 bit values, though, so (1) and (2) are the same wrt.
+ *       save and restore
+ *  3) 64-bit mode with REX.W prefix
+ *     - like (2), but XMM 8-15 are being saved and restored
+ *  4) 64-bit mode without REX.W prefix
+ *     - like (3), but FIP and FDP are 64 bit
+ *
+ * Emulation uses (3) for (1) and (2) and preserves XMM 8-15 to reach the
+ * desired result.  (4) is not emulated.
+ *
+ * Note: Guest and host CPUID.(EAX=07H,ECX=0H):EBX[bit 13] (deprecate FPU CS
+ * and FPU DS) should match.
+ */
+static int em_fxsave(struct x86_emulate_ctxt *ctxt)
+{
+	struct fxregs_state fx_state;
+	size_t size;
+	int rc;
+
+	rc = check_fxsr(ctxt);
+	if (rc != X86EMUL_CONTINUE)
+		return rc;
+
+	ctxt->ops->get_fpu(ctxt);
+
+	rc = asm_safe("fxsave %[fx]", , [fx] "+m"(fx_state));
+
+	ctxt->ops->put_fpu(ctxt);
+
+	if (rc != X86EMUL_CONTINUE)
+		return rc;
+
+	if (ctxt->ops->get_cr(ctxt, 4) & X86_CR4_OSFXSR)
+		size = offsetof(struct fxregs_state, xmm_space[8 * 16/4]);
+	else
+		size = offsetof(struct fxregs_state, xmm_space[0]);
+
+	return segmented_write_std(ctxt, ctxt->memop.addr.mem, &fx_state, size);
+}
+
+static int fxrstor_fixup(struct x86_emulate_ctxt *ctxt,
+		struct fxregs_state *new)
+{
+	int rc = X86EMUL_CONTINUE;
+	struct fxregs_state old;
+
+	rc = asm_safe("fxsave %[fx]", , [fx] "+m"(old));
+	if (rc != X86EMUL_CONTINUE)
+		return rc;
+
+	/*
+	 * 64 bit host will restore XMM 8-15, which is not correct on non-64
+	 * bit guests.  Load the current values in order to preserve 64 bit
+	 * XMMs after fxrstor.
+	 */
+#ifdef CONFIG_X86_64
+	/* XXX: accessing XMM 8-15 very awkwardly */
+	memcpy(&new->xmm_space[8 * 16/4], &old.xmm_space[8 * 16/4], 8 * 16);
+#endif
+
+	/*
+	 * Hardware doesn't save and restore XMM 0-7 without CR4.OSFXSR, but
+	 * does save and restore MXCSR.
+	 */
+	if (!(ctxt->ops->get_cr(ctxt, 4) & X86_CR4_OSFXSR))
+		memcpy(new->xmm_space, old.xmm_space, 8 * 16);
+
+	return rc;
+}
+
+static int em_fxrstor(struct x86_emulate_ctxt *ctxt)
+{
+	struct fxregs_state fx_state;
+	int rc;
+
+	rc = check_fxsr(ctxt);
+	if (rc != X86EMUL_CONTINUE)
+		return rc;
+
+	rc = segmented_read_std(ctxt, ctxt->memop.addr.mem, &fx_state, 512);
+	if (rc != X86EMUL_CONTINUE)
+		return rc;
+
+	if (fx_state.mxcsr >> 16)
+		return emulate_gp(ctxt, 0);
+
+	ctxt->ops->get_fpu(ctxt);
+
+	if (ctxt->mode < X86EMUL_MODE_PROT64)
+		rc = fxrstor_fixup(ctxt, &fx_state);
+
+	if (rc == X86EMUL_CONTINUE)
+		rc = asm_safe("fxrstor %[fx]", : [fx] "m"(fx_state));
+
+	ctxt->ops->put_fpu(ctxt);
+
+	return rc;
 }
 
 static bool valid_cr(int nr)
