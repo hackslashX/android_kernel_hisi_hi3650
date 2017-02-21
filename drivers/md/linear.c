@@ -196,7 +196,8 @@ static int linear_add(struct mddev *mddev, struct md_rdev *rdev)
 		return -ENOMEM;
 
 	mddev_suspend(mddev);
-	oldconf = mddev->private;
+	oldconf = rcu_dereference_protected(mddev->private,
+			lockdep_is_held(&mddev->reconfig_mutex));
 	mddev->raid_disks++;
 	mddev->private = newconf;
 	md_set_array_sectors(mddev, linear_size(mddev, 0, 0));
