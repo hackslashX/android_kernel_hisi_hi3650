@@ -1910,13 +1910,11 @@ static int hw_card_start(struct hw *hw)
 		return err;
 
 	/* Set DMA transfer mask */
-	if (dma_set_mask(&pci->dev, CT_XFI_DMA_MASK) < 0 ||
-	    dma_set_coherent_mask(&pci->dev, CT_XFI_DMA_MASK) < 0) {
-		dev_err(hw->card->dev,
-			"architecture does not support PCI busmaster DMA with mask 0x%llx\n",
-			CT_XFI_DMA_MASK);
-		err = -ENXIO;
-		goto error1;
+	if (!dma_set_mask(&pci->dev, DMA_BIT_MASK(dma_bits))) {
+		dma_set_coherent_mask(&pci->dev, DMA_BIT_MASK(dma_bits));
+	} else {
+		dma_set_mask(&pci->dev, DMA_BIT_MASK(32));
+		dma_set_coherent_mask(&pci->dev, DMA_BIT_MASK(32));
 	}
 
 	if (!hw->io_base) {
