@@ -115,7 +115,7 @@ void f_setown(struct file *filp, unsigned long arg, int force)
 	if (who < 0) {
 		/* avoid overflow below */
 		if (who == INT_MIN)
-			return -EINVAL;
+			return;
 
 		type = PIDTYPE_PGID;
 		who = -who;
