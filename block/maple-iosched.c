@@ -7,9 +7,9 @@
  *           (C) 2012 Miguel Boton <mboton@gmail.com>
  *
  * Maple uses a first come first serve style algorithm with seperated read/write
- * handling to allow for read biases. By prioritizing reads, simple tasks should
- * improve in performance. Maple also uses hooks for the state notifier driver
- * to increase expirations when power is suspended to decrease workload.
+ * handling to allow for read biases. By prioritizing reads, simple tasks should improve
+ * in performance. Maple also uses hooks for the powersuspend driver to increase
+ * expirations when power is suspended to decrease workload.
  */
 #include <linux/blkdev.h>
 #include <linux/elevator.h>
@@ -17,7 +17,7 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/slab.h>
-#include <linux/fb.h>
+#include <linux/state_notifier.h>
 
 #define MAPLE_IOSCHED_PATCHLEVEL	(8)
 
@@ -112,7 +112,7 @@ maple_expired_request(struct maple_data *mdata, int sync, int data_dir)
 	rq = rq_entry_fifo(list->next);
 
 	/* Request has expired */
-	if (time_after_eq(jiffies, rq->fifo_time))
+    if (time_after_eq(jiffies, rq->fifo_time))
 		return rq;
 
 	return NULL;
@@ -134,23 +134,24 @@ maple_choose_expired_request(struct maple_data *mdata)
 	 * Asynchronous requests have priority over synchronous.
 	 * Read requests have priority over write.
 	 */
-	if (rq_async_read && rq_sync_read) {
-		if (time_after(rq_sync_read->fifo_time, rq_async_read->fifo_time))
-			return rq_async_read;
-	} else if (rq_async_read) {
-		return rq_async_read;
-	} else if (rq_sync_read) {
-		return rq_sync_read;
-	}
 
-	if (rq_async_write && rq_sync_write) {
-		if (time_after(rq_sync_write->fifo_time, rq_async_write->fifo_time))
-			return rq_async_write;
-	} else if (rq_async_write) {
-		return rq_async_write;
-	} else if (rq_sync_write) {
-		return rq_sync_write;
-	}
+   if (rq_async_read && rq_sync_read) {
+     if (time_after(rq_sync_read->fifo_time, rq_async_read->fifo_time))
+             return rq_async_read;
+   } else if (rq_async_read) {
+           return rq_async_read;
+   } else if (rq_sync_read) {
+           return rq_sync_read;
+   }
+
+   if (rq_async_write && rq_sync_write) {
+if (time_after(rq_sync_write->fifo_time, rq_async_write->fifo_time))
+             return rq_async_write;
+   } else if (rq_async_write) {
+           return rq_async_write;
+   } else if (rq_sync_write) {
+           return rq_sync_write;
+   }
 
 	return NULL;
 }
@@ -175,7 +176,7 @@ maple_choose_request(struct maple_data *mdata, int data_dir)
 		return rq_entry_fifo(sync[data_dir].next);
 
 	if (!list_empty(&async[!data_dir]))
-		return rq_entry_fifo(async[!data_dir].next);
+			return rq_entry_fifo(async[!data_dir].next);
 	if (!list_empty(&sync[!data_dir]))
 		return rq_entry_fifo(sync[!data_dir].next);
 
@@ -218,10 +219,9 @@ maple_dispatch_requests(struct request_queue *q, int force)
 	/* Retrieve request */
 	if (!rq) {
 		/* Treat writes fairly while suspended, otherwise allow them to be starved */
-		if (mdata->display_on &&
-		    mdata->starved >= mdata->writes_starved)
+		if (!state_suspended && mdata->starved >= mdata->writes_starved)
 			data_dir = WRITE;
-		else if (!mdata->display_on && mdata->starved >= 1)
+		else if (state_suspended && mdata->starved >= 1)
 			data_dir = WRITE;
 
 		rq = maple_choose_request(mdata, data_dir);
@@ -349,7 +349,7 @@ maple_exit_queue(struct elevator_queue *e)
 static ssize_t
 maple_var_show(int var, char *page)
 {
-	return snprintf(page, PAGE_SIZE, "%d\n", var);
+	return sprintf(page, "%d\n", var);
 }
 
 static ssize_t
@@ -408,7 +408,7 @@ STORE_FUNCTION(maple_sleep_latency_multiple_store, &mdata->sleep_latency_multipl
 #undef STORE_FUNCTION
 
 #define DD_ATTR(name) \
-	__ATTR(name, 0644, maple_##name##_show, \
+	__ATTR(name, S_IRUGO|S_IWUSR, maple_##name##_show, \
 				      maple_##name##_store)
 
 static struct elv_fs_entry maple_attrs[] = {
@@ -418,7 +418,7 @@ static struct elv_fs_entry maple_attrs[] = {
 	DD_ATTR(async_write_expire),
 	DD_ATTR(fifo_batch),
 	DD_ATTR(writes_starved),
-	DD_ATTR(sleep_latency_multiple),
+        DD_ATTR(sleep_latency_multiple),
 	__ATTR_NULL
 };
 
