@@ -424,7 +424,18 @@ static void target_complete_nacl(struct kref *kref)
 	struct se_node_acl *nacl = container_of(kref,
 				struct se_node_acl, acl_kref);
 
-	complete(&nacl->acl_free_comp);
+	if (!nacl->dynamic_stop) {
+		complete(&nacl->acl_free_comp);
+		return;
+	}
+
+	mutex_lock(&se_tpg->acl_node_mutex);
+	list_del_init(&nacl->acl_list);
+	mutex_unlock(&se_tpg->acl_node_mutex);
+
+	core_tpg_wait_for_nacl_pr_ref(nacl);
+	core_free_device_list_for_node(nacl, se_tpg);
+	kfree(nacl);
 }
 
 void target_put_nacl(struct se_node_acl *nacl)
@@ -471,6 +482,28 @@ void transport_free_session(struct se_session *se_sess)
 	 */
 	if (se_nacl) {
 		se_sess->se_node_acl = NULL;
+
+		/*
+		 * Also determine if we need to drop the extra ->cmd_kref if
+		 * it had been previously dynamically generated, and
+		 * the endpoint is not caching dynamic ACLs.
+		 */
+		mutex_lock(&se_tpg->acl_node_mutex);
+		if (se_nacl->dynamic_node_acl &&
+		    !se_tfo->tpg_check_demo_mode_cache(se_tpg)) {
+			spin_lock_irqsave(&se_nacl->nacl_sess_lock, flags);
+			if (list_empty(&se_nacl->acl_sess_list))
+				se_nacl->dynamic_stop = true;
+			spin_unlock_irqrestore(&se_nacl->nacl_sess_lock, flags);
+
+			if (se_nacl->dynamic_stop)
+				list_del_init(&se_nacl->acl_list);
+		}
+		mutex_unlock(&se_tpg->acl_node_mutex);
+
+		if (se_nacl->dynamic_stop)
+			target_put_nacl(se_nacl);
+
 		target_put_nacl(se_nacl);
 	}
 	if (se_sess->sess_cmd_map) {
