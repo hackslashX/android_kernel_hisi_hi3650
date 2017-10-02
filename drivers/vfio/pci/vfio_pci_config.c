@@ -762,11 +762,14 @@ static int __init init_pci_cap_exp_perm(struct perm_bits *perm)
 	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
 
 	/*
-	 * Allow writes to device control fields (includes FLR!)
-	 * but not to devctl_phantom which could confuse IOMMU
-	 * or to the ARI bit in devctl2 which is set at probe time
+	 * Allow writes to device control fields, except devctl_phantom,
+	 * which could confuse IOMMU, MPS, which can break communication
+	 * with other physical devices, and the ARI bit in devctl2, which
+	 * is set at probe time.  FLR gets virtualized via our writefn.
 	 */
-	p_setw(perm, PCI_EXP_DEVCTL, NO_VIRT, ~PCI_EXP_DEVCTL_PHANTOM);
+	p_setw(perm, PCI_EXP_DEVCTL,
+	       PCI_EXP_DEVCTL_BCR_FLR | PCI_EXP_DEVCTL_PAYLOAD,
+	       ~PCI_EXP_DEVCTL_PHANTOM);
 	p_setw(perm, PCI_EXP_DEVCTL2, NO_VIRT, ~PCI_EXP_DEVCTL2_ARI);
 	return 0;
 }
