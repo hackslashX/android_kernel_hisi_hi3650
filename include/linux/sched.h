@@ -2143,10 +2143,6 @@ static inline pid_t task_tgid_nr(struct task_struct *tsk)
 	return tsk->tgid;
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> b4cf490... pids: make task_tgid_nr_ns() safe
 static inline int pid_alive(const struct task_struct *p);
 
 static inline pid_t task_pgrp_nr_ns(struct task_struct *tsk,
