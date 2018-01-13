@@ -2932,6 +2932,7 @@ static void dwc3_gadget_conndone_interrupt(struct dwc3 *dwc)
 
 	pr_info("USB CONNDONE, %s\n", usb_speed_string(dwc->gadget.speed));
 	dwc3_conndone_notify(dwc->gadget.speed);
+	dwc->eps[1]->endpoint.maxpacket = dwc->gadget.ep0->maxpacket;
 
 	/* Enable USB2 LPM Capability */
 
