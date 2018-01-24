@@ -2785,11 +2785,6 @@ static int _ffs_func_bind(struct usb_configuration *c,
 	struct ffs_data *ffs = func->ffs;
 
 	const int full = !!func->ffs->fs_descs_count;
-	/* Always read descriptor regardless of max_speed of gadget */
-	/* const int high = gadget_is_dualspeed(func->gadget) && */
-		/* func->ffs->hs_descs_count; */
-	/* const int super = gadget_is_superspeed(func->gadget) && */
-		/* func->ffs->ss_descs_count; */
 	const int high = !!func->ffs->hs_descs_count;
 	const int super = !!func->ffs->ss_descs_count;
 
