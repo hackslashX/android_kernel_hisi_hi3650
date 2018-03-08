@@ -1015,6 +1015,7 @@ struct f2fs_io_info {
 	void *ci_key;
 	int ci_key_len;
 #endif
+	bool is_meta;		/* indicate borrow meta inode mapping or not */
 };
 
 #define is_read_io(rw) (rw == READ)
