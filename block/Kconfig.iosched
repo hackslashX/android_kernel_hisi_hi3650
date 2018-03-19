@@ -31,6 +31,10 @@ config IOSCHED_ROW
 	  according to queue priority.
 	  Most suitable for mobile devices.
 
+config IOSCHED_MAPLE
+	tristate "Maple I/O scheduler"
+	depends on FB
+
 config IOSCHED_CFQ
 	tristate "CFQ I/O scheduler"
 	default y
