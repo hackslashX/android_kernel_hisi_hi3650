@@ -1464,7 +1464,7 @@ retry_encrypt:
 	 * If current allocation needs SSR,
 	 * it had better in-place writes for updated data.
 	 */
-	if (unlikely(fio->old_blkaddr != NEW_ADDR &&
+	if (unlikely(is_valid_blkaddr(fio->blk_addr) &&
 			!is_cold_data(page) &&
 			!IS_ATOMIC_WRITTEN_PAGE(page) &&
 			need_inplace_update(inode, fio))) {
