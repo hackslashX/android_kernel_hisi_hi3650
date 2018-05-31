@@ -1487,13 +1487,16 @@ static int intel_pt_walk_fup_tip(struct intel_pt_decoder *decoder)
 		case INTEL_PT_PSB:
 		case INTEL_PT_TSC:
 		case INTEL_PT_TMA:
-		case INTEL_PT_CBR:
 		case INTEL_PT_MODE_TSX:
 		case INTEL_PT_BAD:
 		case INTEL_PT_PSBEND:
 			intel_pt_log("ERROR: Missing TIP after FUP\n");
 			decoder->pkt_state = INTEL_PT_STATE_ERR3;
 			return -ENOENT;
+
+		case INTEL_PT_CBR:
+			intel_pt_calc_cbr(decoder);
+			break;
 
 		case INTEL_PT_OVF:
 			return intel_pt_overflow(decoder);
