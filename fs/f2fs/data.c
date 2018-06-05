@@ -938,7 +938,7 @@ next_dnode:
 next_block:
 	blkaddr = datablock_addr(dn.node_page, dn.ofs_in_node);
 
-	if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR) {
+	if (!is_valid_data_blkaddr(sbi, dn.data_blkaddr)) {
 		if (create) {
 			if (unlikely(f2fs_cp_error(sbi))) {
 				err = -EIO;
@@ -1464,7 +1464,7 @@ retry_encrypt:
 	 * If current allocation needs SSR,
 	 * it had better in-place writes for updated data.
 	 */
-	if (unlikely(is_valid_blkaddr(fio->blk_addr) &&
+	if (unlikely(is_valid_data_blkaddr(fio->sbi, fio->blk_addr) &&
 			!is_cold_data(page) &&
 			!IS_ATOMIC_WRITTEN_PAGE(page) &&
 			need_inplace_update(inode, fio))) {
