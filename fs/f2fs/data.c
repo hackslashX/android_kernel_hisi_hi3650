@@ -1190,6 +1190,9 @@ static struct bio *f2fs_grab_bio(struct inode *inode, block_t blkaddr,
 	struct bio *bio;
 	bool need_key = false;
 
+	if (!f2fs_is_valid_blkaddr(sbi, blkaddr, DATA_GENERIC))
+		return ERR_PTR(-EFAULT);
+
 	if (f2fs_encrypted_inode(inode) && S_ISREG(inode->i_mode)) {
 		if (!f2fs_inline_encrypted_inode(inode)) {
 			ctx = fscrypt_get_ctx(inode, GFP_NOFS);
