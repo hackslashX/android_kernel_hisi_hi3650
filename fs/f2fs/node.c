@@ -1430,6 +1430,9 @@ static int __write_node_page(struct page *page, bool atomic, bool *submitted,
 	if (atomic && !test_opt(sbi, NOBARRIER))
 #endif
 		fio.op_flags |= WRITE_FLUSH_FUA;
+	if (__is_valid_data_blkaddr(ni.blk_addr) &&
+		!f2fs_is_valid_blkaddr(sbi, ni.blk_addr, DATA_GENERIC))
+		goto redirty_out;
 
 	set_page_writeback(page);
 	fio.old_blkaddr = ni.blk_addr;
