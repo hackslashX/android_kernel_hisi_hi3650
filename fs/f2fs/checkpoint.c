@@ -829,14 +829,14 @@ int get_valid_checkpoint(struct f2fs_sb_info *sbi)
 	if (sanity_check_ckpt(sbi))
 		goto free_fail_no_cp;
 
-	/* Sanity checking of checkpoint */
-	if (sanity_check_ckpt(sbi))
-		goto free_fail_no_cp;
-
 	if (cur_page == cp1)
 		sbi->cur_cp_pack = 1;
 	else
 		sbi->cur_cp_pack = 2;
+
+	/* Sanity checking of checkpoint */
+	if (sanity_check_ckpt(sbi))
+		goto free_fail_no_cp;
 
 	if (cp_blks <= 1)
 		goto done;
