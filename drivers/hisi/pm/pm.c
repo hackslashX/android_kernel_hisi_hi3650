@@ -145,7 +145,7 @@ void pm_gic_pending_dump(void)
 					printk("(gpio-%d)", gpio);
                 }
 				/* notify dubai module to update wakeup information */
-				dubai_update_wakeup_info(g_ap_irq_name[irq], gpio);
+				// dubai_update_wakeup_info(g_ap_irq_name[irq], gpio); -> disable dubai
 				printk("\n");
 			}
 		}
