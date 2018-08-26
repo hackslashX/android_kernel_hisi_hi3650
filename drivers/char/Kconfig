@@ -603,6 +603,15 @@ config TILE_SROM
 	  device appear much like a simple EEPROM, and knows
 	  how to partition a single ROM for multiple purposes.
 
+config FRANDOM
+	bool "/dev/frandom device support"
+	default y
+	help
+	  Say Y here if you want to support the /dev/frandom device. Frandom
+	  is a Linux kernel random number generator, which is 10-50 times faster 
+	  than what you get from Linux' built-in /dev/urandom.
+	  When in doubt, say "N"
+
 source "drivers/char/xillybus/Kconfig"
 
 endmenu
