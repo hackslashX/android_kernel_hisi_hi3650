@@ -1929,42 +1929,42 @@ int hi6402_mic3_micbias_power_mode_event(struct snd_soc_dapm_widget *w,
 * from 0 to 36 dB in 2 dB steps
 * MAX VALUE is 18
 */
-static DECLARE_TLV_DB_SCALE(main_mic_tlv, 0, 200, 0);
+static DECLARE_TLV_DB_SCALE(main_mic_tlv, 0, 400, 0);
 
 /*
 * AUX MIC GAIN volume control:
 * from 0 to 36 dB in 2 dB steps
 * MAX VALUE is 18
 */
-static DECLARE_TLV_DB_SCALE(aux_mic_tlv, 0, 200, 0);
+static DECLARE_TLV_DB_SCALE(aux_mic_tlv, 0, 400, 0);
 
 /*
 * LINEINR MIC GAIN volume control:
 * from -20 to 36 dB in 2 dB steps
 * MAX VALUE is 18
 */
-static DECLARE_TLV_DB_SCALE(lineinr_mic_tlv, -2000, 200, 0);
+static DECLARE_TLV_DB_SCALE(lineinr_mic_tlv, -2000, 400, 0);
 
 /*
 * LINEINL MIC GAIN volume control:
 * from -20 to 36 dB in 2 dB steps
 * MAX VALUE is 18
 */
-static DECLARE_TLV_DB_SCALE(lineinl_mic_tlv, -2000, 200, 0);
+static DECLARE_TLV_DB_SCALE(lineinl_mic_tlv, -2000, 400, 0);
 
 /*
 * LOL PGA GAIN volume control:
 * from -21 to 6 dB in 1.5 dB steps
 * MAX VALUE is 18
 */
-static DECLARE_TLV_DB_SCALE(lol_pga_tlv, -2100, 150, 0);
+static DECLARE_TLV_DB_SCALE(lol_pga_tlv, -2100, 300, 0);
 
 /*
 * LOR PGA GAIN volume control:
 * from -21 to 6 dB in 1.5 dB steps
 * MAX VALUE is 18
 */
-static DECLARE_TLV_DB_SCALE(lor_pga_tlv, -2100, 150, 0);
+static DECLARE_TLV_DB_SCALE(lor_pga_tlv, -2100, 300, 0);
 
 /*
 * EP PGA GAIN volume control:
@@ -2023,9 +2023,9 @@ static const struct snd_kcontrol_new hi6402_snd_controls[] = {
 		HI6402_S4_FS_CFG_L, HI6402_PORT_FS_CFG, 7, 0),
 	/* s1 i pga gain kcontrol */
 	SOC_SINGLE("S1 IL PGA GAIN",
-		HI6402_S1_PGA_IL_GAIN_CFG_REG, HI6402_S1_PGA_IL_GAIN_BIT, 255, 0),
+		HI6402_S1_PGA_IL_GAIN_CFG_REG, HI6402_S1_PGA_IL_GAIN_BIT, 265, 0),
 	SOC_SINGLE("S1 IR PGA GAIN",
-		HI6402_S1_PGA_IR_GAIN_CFG_REG, HI6402_S1_PGA_IR_GAIN_BIT, 255, 0),
+		HI6402_S1_PGA_IR_GAIN_CFG_REG, HI6402_S1_PGA_IR_GAIN_BIT, 265, 0),
 	/* s2 i pga gain kcontrol */
 	SOC_SINGLE("S2 IL PGA GAIN",
 		HI6402_S2_PGA_IL_GAIN_CFG_REG, HI6402_S2_PGA_IL_GAIN_BIT, 255, 0),
@@ -4713,8 +4713,6 @@ static int hi6402_audio_hw_params(struct snd_pcm_substream *substream,
 	rate = params_rate(params);
 
 	switch (rate) {
-	case 8000:
-	case 11250:
 	case 16000:
 	case 22500:
 	case 32000:
