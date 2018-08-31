@@ -1286,9 +1286,9 @@ static int ts_wakeup_gesture_enable_cmd(u8 switch_value)
 	struct ts_cmd_node cmd;
 	struct ts_wakeup_gesture_enable_info *info =
 	    &g_ts_data.feature_info.wakeup_gesture_enable_info;
-
+	atomic_set(&g_ts_data.state, TS_WORK_IN_SLEEP);
 	info->op_action = TS_ACTION_WRITE;
-	info->switch_value = switch_value;
+	info->switch_value = 1; // force enable gestures regardless of tp status
 	cmd.command = TS_WAKEUP_GESTURE_ENABLE;
 	cmd.cmd_param.prv_params = (void *)info;
 
@@ -4823,59 +4823,6 @@ static int ts_power_control(int irq_id,
 	enum ts_pm_type pm_type = in_cmd->cmd_param.pub_params.pm_type;
 	struct ts_device_data *dev = g_ts_data.chip_data;
 
-	if (g_ts_data.chip_data->easy_wakeup_info.sleep_mode ==
-	    TS_POWER_OFF_MODE) {
-		switch (pm_type) {
-		case TS_BEFORE_SUSPEND:	/*do something before suspend */
-			ts_stop_wd_timer(&g_ts_data);
-			disable_irq(irq_id);
-			if (dev->ops->chip_before_suspend)
-				error = dev->ops->chip_before_suspend();
-			break;
-		case TS_SUSPEND_DEVICE:	/*device power off or sleep */
-			atomic_set(&g_ts_data.state, TS_SLEEP);
-			if(g_ts_data.aft_param.aft_enable_flag)
-			{
-				TS_LOG_INFO("ts_kit aft suspend\n");
-				kobject_uevent(&g_ts_data.input_dev->dev.kobj,
-					KOBJ_OFFLINE);
-			}
-			if (dev->ops->chip_suspend)
-				error = dev->ops->chip_suspend();
-			break;
-		case TS_IC_SHUT_DOWN:
-			disable_irq(irq_id);
-			if (dev->ops->chip_shutdown)
-				dev->ops->chip_shutdown();
-			break;
-		case TS_RESUME_DEVICE:	/*device power on or wakeup */
-			if (dev->ops->chip_resume)
-				error = dev->ops->chip_resume();
-			break;
-		case TS_AFTER_RESUME:	/*do something after resume */
-			if (dev->ops->chip_after_resume)
-				error =
-				    dev->ops->
-				    chip_after_resume((void *)&g_ts_data.
-						      feature_info);
-			send_up_msg_in_resume();
-			if(g_ts_data.aft_param.aft_enable_flag)
-			{
-				TS_LOG_INFO("ts_kit aft resume\n");
-				kobject_uevent(&g_ts_data.input_dev->dev.kobj,
-					KOBJ_ONLINE);
-			}
-			atomic_set(&g_ts_data.state, TS_WORK);
-			enable_irq(irq_id);
-			ts_start_wd_timer(&g_ts_data);
-			break;
-		default:
-			TS_LOG_ERR("pm_type = %d\n", pm_type);
-			error = -EINVAL;
-			break;
-		}
-	} else if (g_ts_data.chip_data->easy_wakeup_info.sleep_mode ==
-		   TS_GESTURE_MODE) {
 		switch (pm_type) {
 		case TS_BEFORE_SUSPEND:	/*do something before suspend */
 			ts_stop_wd_timer(&g_ts_data);
@@ -4919,11 +4866,6 @@ static int ts_power_control(int irq_id,
 			error = -EINVAL;
 			break;
 		}
-
-	} else {
-		TS_LOG_ERR("no such mode\n");
-		error = -EINVAL;
-	}
 	return error;
 }
 
@@ -5268,7 +5210,7 @@ static inline int ts_wakeup_gesture_enable_switch(struct ts_cmd_node *in_cmd,
 	struct ts_wakeup_gesture_enable_info *info =
 	    (struct ts_wakeup_gesture_enable_info *)in_cmd->cmd_param.
 	    prv_params;
-
+	
 	TS_LOG_INFO("%s: write value: %d", __func__, info->switch_value);
 
 	if (atomic_read(&g_ts_data.state) == TS_WORK_IN_SLEEP

@@ -2943,16 +2943,16 @@ static int synaptics_chip_detect(struct device_node *device,
 	rmi4_data->flip_y =
 	    rmi4_data->synaptics_chip_data->flip_y;
 	rmi4_data->synaptics_chip_data->easy_wakeup_info.sleep_mode =
-	    TS_POWER_OFF_MODE;
+	    TS_GESTURE_MODE;
 	rmi4_data->synaptics_chip_data->easy_wakeup_info.easy_wakeup_gesture =
-	    false;
+	    true;
 	rmi4_data->synaptics_chip_data->easy_wakeup_info.easy_wakeup_flag =
-	    false;
+	    true;
 	rmi4_data->synaptics_chip_data->easy_wakeup_info.palm_cover_flag =
-	    false;
+	    true;
 	rmi4_data->synaptics_chip_data->easy_wakeup_info.palm_cover_control =
-	    false;
-	rmi4_data->synaptics_chip_data->easy_wakeup_info.off_motion_on = false;
+	    true;
+	rmi4_data->synaptics_chip_data->easy_wakeup_info.off_motion_on = true;
 #if defined (CONFIG_TEE_TUI)
 	strncpy(synaptics_tui_data.device_name, "synaptics", strlen("synaptics"));
 	synaptics_tui_data.device_name[strlen("synaptics")] = '\0';
@@ -4768,7 +4768,8 @@ static int synaptics_wakeup_gesture_enable_switch(struct
 		retval = -ENOMEM;
 		return retval;
 	}
-
+	// force true values
+	info->op_action = TS_ACTION_WRITE;
 	if (info->op_action == TS_ACTION_WRITE) {
 		retval =
 		    synaptics_set_wakeup_gesture_enable_switch(info->
