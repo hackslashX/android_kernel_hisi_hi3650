@@ -2,3 +2,5 @@
 clean\.sh
 
 build\.sh
+
+patches/*
