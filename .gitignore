@@ -1,6 +1,5 @@
-
 clean\.sh
-
 build\.sh
-
 patches/*
+net/wireguard/*
+.vscode/settings.json
