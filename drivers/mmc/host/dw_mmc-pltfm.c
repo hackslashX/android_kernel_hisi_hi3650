@@ -52,15 +52,12 @@ int dw_mci_pltfm_register(struct platform_device *pdev,
 	if (IS_ERR(host->regs))
 		return PTR_ERR(host->regs);
 
-    /*Ë½ÓÐIPÊý¾Ý³õÊ¼»¯*/
+    /*Ë½ï¿½ï¿½IPï¿½ï¿½ï¿½Ý³ï¿½Ê¼ï¿½ï¿½*/
 	if (drv_data && drv_data->init) {
 		ret = drv_data->init(host);
 		if (ret)
 			return ret;
 	}
-
-	/* Get registers' physical base address */
-	host->phy_regs = regs->start;
 
 	platform_set_drvdata(pdev, host);
 
