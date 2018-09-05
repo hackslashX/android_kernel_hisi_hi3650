@@ -570,8 +570,8 @@ struct ts_roi_info {
 };
 
 enum ts_sleep_mode {
-	TS_GESTURE_MODE = 0,
-	TS_POWER_OFF_MODE,	
+	TS_POWER_OFF_MODE = 0,
+	TS_GESTURE_MODE,
 };
 
 struct ts_easy_wakeup_info {
