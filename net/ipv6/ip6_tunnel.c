@@ -1082,6 +1082,7 @@ static int ip6_tnl_xmit2(struct sk_buff *skb,
 
 		memcpy(&fl6->daddr, addr6, sizeof(fl6->daddr));
 		neigh_release(neigh);
+		}
 	} else if (!(t->parms.flags &
 		     (IP6_TNL_F_USE_ORIG_TCLASS | IP6_TNL_F_USE_ORIG_FWMARK))) {
 		/* enable the cache only only if the routing decision does
