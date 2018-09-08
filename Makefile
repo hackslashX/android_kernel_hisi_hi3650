@@ -868,6 +868,10 @@ include scripts/Makefile.kasan
 include scripts/Makefile.extrawarn
 include scripts/Makefile.ubsan
 
+# Add Device Specific Optimization
+KBUILD_CFLAGS += -march=armv8-a+crypto -march=armv8-a+crc -mcpu=cortex-a53 -O2
+KBUILD_CPPFLAGS += -march=armv8-a+crypto -march=armv8-a+crc -mcpu=cortex-a53 -O2
+
 # Add any arch overrides and user supplied CPPFLAGS, AFLAGS and CFLAGS as the
 # last assignments
 KBUILD_CPPFLAGS += $(ARCH_CPPFLAGS) $(KCPPFLAGS)
