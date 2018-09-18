@@ -2289,8 +2289,8 @@ blk_qc_t generic_make_request(struct bio *bio)
 	 * it is non-NULL, then a make_request is active, and new requests
 	 * should be added at the tail
 	 */
-	if (unlikely(current->bio_list)) {
-		bio_list_add(current->bio_list[0], bio);
+	if (current->bio_list) {
+		bio_list_add(current->bio_list, bio);
 		goto out;
 	}
 
@@ -2309,19 +2309,18 @@ blk_qc_t generic_make_request(struct bio *bio)
 	 * bio_list, and call into ->make_request() again.
 	 */
 	BUG_ON(bio->bi_next);
-	bio_list_init(&bio_list_on_stack[0]);
-	current->bio_list = bio_list_on_stack;
+	bio_list_init(&bio_list_on_stack);
+	current->bio_list = &bio_list_on_stack;
 	do {
 		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
-		if (likely(blk_queue_enter(q, __GFP_DIRECT_RECLAIM) == 0)) {
+
+		if (likely(blk_queue_enter(q, false) == 0)) {
+			struct bio_list hold;
 			struct bio_list lower, same;
 
 			/* Create a fresh bio_list for all subordinate requests */
 			hold = bio_list_on_stack;
 			bio_list_init(&bio_list_on_stack);
-#ifdef CONFIG_HISI_IO_LATENCY_TRACE
-			bio_latency_check(bio,BIO_PROC_STAGE_GENERIC_MAKE_REQ);
-#endif
 			ret = q->make_request_fn(q, bio);
 
 			blk_queue_exit(q);
@@ -2330,19 +2329,19 @@ blk_qc_t generic_make_request(struct bio *bio)
 			 */
 			bio_list_init(&lower);
 			bio_list_init(&same);
-			while ((bio = bio_list_pop(&bio_list_on_stack[0])) != NULL)
+			while ((bio = bio_list_pop(&bio_list_on_stack)) != NULL)
 				if (q == bdev_get_queue(bio->bi_bdev))
 					bio_list_add(&same, bio);
 				else
 					bio_list_add(&lower, bio);
 			/* now assemble so we handle the lowest level first */
-			bio_list_merge(&bio_list_on_stack[0], &lower);
-			bio_list_merge(&bio_list_on_stack[0], &same);
-			bio_list_merge(&bio_list_on_stack[0], &bio_list_on_stack[1]);
+			bio_list_merge(&bio_list_on_stack, &lower);
+			bio_list_merge(&bio_list_on_stack, &same);
+			bio_list_merge(&bio_list_on_stack, &hold);
 		} else {
 			bio_io_error(bio);
 		}
-		bio = bio_list_pop(&bio_list_on_stack[0]);
+		bio = bio_list_pop(current->bio_list);
 	} while (bio);
 	current->bio_list = NULL; /* deactivate */
 

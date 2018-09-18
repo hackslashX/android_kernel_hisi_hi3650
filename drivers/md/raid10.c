@@ -946,8 +946,7 @@ static void wait_barrier(struct r10conf *conf)
 				    !conf->barrier ||
 				    (conf->nr_pending &&
 				     current->bio_list &&
-				     (!bio_list_empty(&current->bio_list[0]) ||
-				      !bio_list_empty(&current->bio_list[1]))),
+				     !bio_list_empty(current->bio_list)),
 				    conf->resync_lock);
 		conf->nr_waiting--;
 	}
