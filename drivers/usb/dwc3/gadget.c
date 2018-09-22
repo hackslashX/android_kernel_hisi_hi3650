@@ -282,7 +282,7 @@ void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
 	 * up overwritting the contents of req->buf and this could confuse the
 	 * gadget driver.
 	 */
-	if (dwc->ep0_bounced && dep->number <= 1) {
+	if (dwc->ep0_bounced && dep->number <= 1)
 		dwc->ep0_bounced = false;
 	else {
 		if (req->mapped) {
