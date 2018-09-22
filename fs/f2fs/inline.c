@@ -307,7 +307,7 @@ struct f2fs_dir_entry *find_in_inline_dir(struct inode *dir,
 		return NULL;
 	}
 
-	namehash = f2fs_dentry_hash(&name, fname);
+	namehash = f2fs_dentry_hash(&name);
 
 	inline_dentry = inline_data_addr(ipage);
 

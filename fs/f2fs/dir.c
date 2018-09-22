@@ -142,7 +142,7 @@ struct f2fs_dir_entry *find_target_dentry(struct fscrypt_name *fname,
 			de->hash_code == namehash &&
 			!memcmp(de_name.name, name->name, name->len))
 			goto found;
-not_match:
+
 		if (max_slots && max_len > *max_slots)
 			*max_slots = max_len;
 		max_len = 0;
