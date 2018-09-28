@@ -1135,7 +1135,6 @@ static const char *f2fs_encrypted_follow_link(struct dentry *dentry, void **cook
 	if (IS_ERR(cpage))
 		return ERR_CAST(cpage);
 	caddr = page_address(cpage);
-	caddr[size] = 0;
 
 	/* Symlink is encrypted */
 	sd = (struct fscrypt_symlink_data *)caddr;

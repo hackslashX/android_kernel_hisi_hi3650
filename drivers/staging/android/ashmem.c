@@ -713,14 +713,11 @@ static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
 	size_t pgstart, pgend;
 	int ret = -EINVAL;
 
-	mutex_lock(&ashmem_mutex);
-
 	if (unlikely(!asma->file))
-		goto out_unlock;
+		return -EINVAL;
 
 	if (unlikely(copy_from_user(&pin, p, sizeof(pin)))) {
 		ret = -EFAULT;
-		goto out_unlock;
 	}
 
 	/* per custom, you can pass zero for len to mean "everything onward" */
@@ -728,13 +725,13 @@ static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
 		pin.len = PAGE_ALIGN(asma->size) - pin.offset;
 
 	if (unlikely((pin.offset | pin.len) & ~PAGE_MASK))
-		goto out_unlock;
+		return -EINVAL;
 
 	if (unlikely(((__u32)-1) - pin.offset < pin.len))
-		goto out_unlock;
+		return -EINVAL;
 
 	if (unlikely(PAGE_ALIGN(asma->size) < pin.offset + pin.len))
-		goto out_unlock;
+		return -EINVAL;
 
 	pgstart = pin.offset / PAGE_SIZE;
 	pgend = pgstart + (pin.len / PAGE_SIZE) - 1;

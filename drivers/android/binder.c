@@ -4667,7 +4667,6 @@ static unsigned int binder_poll(struct file *filp,
 
 	thread = binder_get_thread(proc);
 	if (!thread) {
-		binder_unlock(__func__);
 		return POLLERR;
 	}
 
