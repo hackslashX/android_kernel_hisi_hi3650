@@ -1910,7 +1910,9 @@ static int page_cache_read(struct file *file, pgoff_t offset)
 		if (!page)
 			return -ENOMEM;
 
-		ret = add_to_page_cache_lru(page, mapping, offset, gfp_mask);
+		ret = add_to_page_cache_lru(page, mapping, offset,
+				mapping_gfp_constraint(mapping, GFP_KERNEL));
+
 		if (ret == 0)
 			ret = mapping->a_ops->readpage(file, page);
 		else if (ret == -EEXIST)
