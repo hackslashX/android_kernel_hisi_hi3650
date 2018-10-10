@@ -508,6 +508,9 @@ extern struct cpufreq_governor cpufreq_gov_sched;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_BLU_ACTIVE)
 extern struct cpufreq_governor cpufreq_gov_blu_active;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_blu_active)
+#elif defined(CONFIG_CPU_FREQ_GOV_BLU_SCHEDUTIL)
+extern struct cpufreq_governor blu_schedutil_gov;
+#define CPUFREQ_DEFAULT_GOVERNOR	(&blu_schedutil_gov)
 #endif
 
 /*********************************************************************
