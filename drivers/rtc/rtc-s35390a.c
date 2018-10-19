@@ -100,7 +100,25 @@ static int s35390a_get_reg(struct s35390a *s35390a, int reg, char *buf, int len)
 
 static int s35390a_reset(struct s35390a *s35390a)
 {
-	char buf[1];
+	u8 buf;
+	int ret;
+	unsigned initcount = 0;
+
+	ret = s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, status1, 1);
+	if (ret < 0)
+		return ret;
+
+	if (*status1 & S35390A_FLAG_POC)
+		/*
+		 * Do not communicate for 0.5 seconds since the power-on
+		 * detection circuit is in operation.
+		 */
+		msleep(500);
+	else if (!(*status1 & S35390A_FLAG_BLD))
+		/*
+		 * If both POC and BLD are unset everything is fine.
+		 */
+		return 0;
 
 	if (s35390a_get_reg(s35390a, S35390A_CMD_STATUS1, buf, sizeof(buf)) < 0)
 		return -EIO;
