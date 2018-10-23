@@ -23,6 +23,13 @@ choice
 	  with lots of processors that may show reduced performance if
 	  too many timer interrupts are occurring.
 
+	config HZ_156
+		bool "156 HZ"
+	help
+	 156 Hz is a new, experimental and mathematically calculated
+	 optimal frequency for maximum efficiency without compromising
+	 performance on a 8 core system.
+
 	config HZ_250
 		bool "250 HZ"
 	help
@@ -50,6 +57,7 @@ endchoice
 config HZ
 	int
 	default 100 if HZ_100
+	default 156 if HZ_156
 	default 250 if HZ_250
 	default 300 if HZ_300
 	default 1000 if HZ_1000
