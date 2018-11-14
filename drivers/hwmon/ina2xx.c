@@ -270,8 +270,9 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg,
 		val = regval * data->config->power_lsb;
 		break;
 	case INA2XX_CURRENT:
-		/* signed register, LSB=1mA (selected), in mA */
-		val = (s16)regval;
+		/* signed register, result in mA */
+		val = (s16)regval * data->current_lsb_uA;
+		val = DIV_ROUND_CLOSEST(val, 1000);
 		break;
 	case INA2XX_CALIBRATION:
 		val = DIV_ROUND_CLOSEST(data->config->calibration_factor,
