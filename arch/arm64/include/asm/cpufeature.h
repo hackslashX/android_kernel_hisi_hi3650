@@ -40,8 +40,6 @@
 #define ARM64_HARDEN_BRANCH_PREDICTOR           12
 #define ARM64_HAS_32BIT_EL0                     13
 
-#define ARM64_NCAPS				14
-
 #ifndef __ASSEMBLY__
 
 #include <linux/kernel.h>
