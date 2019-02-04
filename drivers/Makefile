@@ -214,6 +214,4 @@ obj-y += cfi/
 obj-$(CONFIG_HUAWEI_ABNS) += abns/
 obj-$(CONFIG_TEE)		+= tee/
 
-# DTS_EAGLE START
 obj-$(CONFIG_AINUR_DTS_SW) += dts_eagle/
-# DTS_EAGLE END
