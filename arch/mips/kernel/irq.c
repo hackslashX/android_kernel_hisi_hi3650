@@ -52,6 +52,7 @@ asmlinkage void spurious_interrupt(void)
 void __init init_IRQ(void)
 {
 	int i;
+	unsigned int order = get_order(IRQ_STACK_SIZE);
 
 	for (i = 0; i < NR_IRQS; i++)
 		irq_set_noprobe(i);
@@ -103,4 +104,3 @@ void __irq_entry do_IRQ(unsigned int irq)
 	generic_handle_irq(irq);
 	irq_exit();
 }
-
