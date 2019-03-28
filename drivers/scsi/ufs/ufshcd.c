@@ -6387,19 +6387,19 @@ static u32 ufshcd_find_max_sup_active_icc_level(struct ufs_hba *hba,
 		goto out;
 	}
 
-	if (hba->vreg_info.vcc)
+	if (hba->vreg_info.vcc && hba->vreg_info.vcc->max_uA)
 		icc_level = ufshcd_get_max_icc_level(
 				hba->vreg_info.vcc->max_uA,
 				POWER_DESC_MAX_ACTV_ICC_LVLS - 1,
 				&desc_buf[PWR_DESC_ACTIVE_LVLS_VCC_0]);/*lint !e64*/
 
-	if (hba->vreg_info.vccq)
+	if (hba->vreg_info.vccq && hba->vreg_info.vccq->max_uA)
 		icc_level = ufshcd_get_max_icc_level(
 				hba->vreg_info.vccq->max_uA,
 				icc_level,
 				&desc_buf[PWR_DESC_ACTIVE_LVLS_VCCQ_0]);/*lint !e64*/
 
-	if (hba->vreg_info.vccq2)
+	if (hba->vreg_info.vccq2 && hba->vreg_info.vccq2->max_uA)
 		icc_level = ufshcd_get_max_icc_level(
 				hba->vreg_info.vccq2->max_uA,
 				icc_level,
@@ -6779,6 +6779,20 @@ static void ufshcd_async_scan(void *data, async_cookie_t cookie)
 			dev_err(hba->dev, "host init failed, HCE/Device reset "
 					  "err %d, retry %d\n",
 				err, retries);
+		/*
+	 	* "set_load" operation shall be required on those regulators
+	 	* which specifically configured current limitation. Otherwise
+	 	* zero max_uA may cause unexpected behavior when regulator is
+	 	* enabled or set as high power mode.
+	 	*/
+		if (!vreg->max_uA)
+			return 0;
+
+		ret = regulator_set_load(vreg->reg, ua);
+		if (ret < 0) {
+			dev_err(dev, "%s: %s set load (ua=%d) failed, err=%d\n",
+					__func__, vreg->name, ua, ret);
+		}
 
 		/*
 		 * HCE reset failed. We must trigger a hardware reset
@@ -8872,12 +8886,8 @@ int ufshcd_runtime_resume(struct ufs_hba *hba)
 
 	if (!hba->is_powered)
 		return 0;
-<<<<<<< HEAD
 	if (hba->ufshcd_state == UFSHCD_STATE_RESET)
 		return -EIO;
-=======
-
->>>>>>> 8e5f27d... scsi: ufs: fix bugs related to null pointer access and array size
 	return ufshcd_resume(hba, UFS_RUNTIME_PM);
 }
 EXPORT_SYMBOL(ufshcd_runtime_resume);
