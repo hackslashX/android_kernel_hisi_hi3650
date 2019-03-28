@@ -8818,15 +8818,10 @@ EXPORT_SYMBOL(ufshcd_system_suspend);
 
 int ufshcd_system_resume(struct ufs_hba *hba)
 {
-<<<<<<< HEAD
-	int ret;
-	if (!hba || !hba->is_powered)
-=======
 	if (!hba)
 		return -EINVAL;
 
 	if (!hba->is_powered || pm_runtime_suspended(hba->dev))
->>>>>>> 8e5f27d... scsi: ufs: fix bugs related to null pointer access and array size
 		/*
 		 * Let the runtime resume take care of resuming
 		 * if runtime suspended.
