@@ -1061,7 +1061,12 @@ static void mlx4_ib_disassociate_ucontext(struct ib_ucontext *ibcontext)
 		context->hw_bar_info[i].vma->vm_ops = NULL;
 	}
 
+<<<<<<< HEAD
 	up_read(&owning_mm->mmap_sem);
+=======
+skip_mm:
+	up_write(&owning_mm->mmap_sem);
+>>>>>>> 8f6345a11caa... coredump: fix race condition between mmget_not_zero()/get_task_mm() and core dumping
 	mmput(owning_mm);
 	put_task_struct(owning_process);
 }
