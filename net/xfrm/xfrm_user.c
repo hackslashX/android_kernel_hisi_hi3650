@@ -149,8 +149,10 @@ static int verify_newsa_info(struct xfrm_usersa_info *p,
 	int err;
 
 	err = -EINVAL;
-	switch (p->family) {
+	switch (p->sel.family) {
 	case AF_INET:
+		if (p->sel.prefixlen_d > 32 || p->sel.prefixlen_s > 32)
+			goto out;
 		break;
 
 	case AF_INET6:
