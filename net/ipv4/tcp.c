@@ -3336,7 +3336,7 @@ void __init tcp_init(void)
 #else
 	sock_skb_cb_check_size(sizeof(struct tcp_skb_cb));
 #endif
-
+	BUILD_BUG_ON(TCP_MIN_SND_MSS <= MAX_TCP_OPTION_SPACE);
 	percpu_counter_init(&tcp_sockets_allocated, 0, GFP_KERNEL);
 	percpu_counter_init(&tcp_orphan_count, 0, GFP_KERNEL);
 	tcp_hashinfo.bind_bucket_cachep =
