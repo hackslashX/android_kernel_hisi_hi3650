@@ -68,7 +68,6 @@ static DECLARE_WAIT_QUEUE_HEAD(oom_waitq);
 static DECLARE_COMPLETION(reclaim_done);
 static atomic_t victims_to_kill = ATOMIC_INIT(0);
 static atomic_t needs_reclaim = ATOMIC_INIT(0);
-
 static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 {
 	const struct victim_info *lhs = (typeof(lhs))lhs_ptr;
@@ -77,7 +76,7 @@ static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 	return rhs->size - lhs->size;
 }
 
-static bool vtsk_is_duplicate(int vlen, struct task_struct *vtsk)
+static bool vtsk_is_duplicate(int vlen, struct task_struct *vtsk) 
 {
 	int i;
 
