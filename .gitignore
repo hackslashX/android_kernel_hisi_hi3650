@@ -2,6 +2,12 @@ clean\.sh
 build\.sh
 patches/*
 net/wireguard/*
+arch/arm/boot/dts/include/dt-bindings/*
+arch/arm64/boot/dts/include/dt-bindings/*
+arch/cris/boot/dts/include/dt-bindings/*
+arch/mips/boot/dts/include/dt-bindings/*
+arch/powerpc/boot/dts/include/dt-bindings/*
+arch/metag/boot/dts/include/dt-bindings/*
 .vscode/settings.json
 #
 # NOTE! Don't add files that are generated in specific
