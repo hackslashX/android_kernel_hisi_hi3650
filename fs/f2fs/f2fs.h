@@ -304,7 +304,7 @@ struct cp_control {
 };
 
 /*
- * indicate meta/data type
+ * For CP/NAT/SIT/SSA readahead
  */
 enum {
 	META_CP,
@@ -312,8 +312,6 @@ enum {
 	META_SIT,
 	META_SSA,
 	META_POR,
-	DATA_GENERIC,
-	META_GENERIC,
 };
 
 /* for the list of ino */
@@ -1017,7 +1015,6 @@ struct f2fs_io_info {
 	void *ci_key;
 	int ci_key_len;
 #endif
-	bool is_meta;		/* indicate borrow meta inode mapping or not */
 };
 
 #define is_read_io(rw) (rw == READ)
@@ -1153,7 +1150,6 @@ struct f2fs_sb_info {
 	struct f2fs_checkpoint *ckpt;		/* raw checkpoint pointer */
 	spinlock_t cp_lock;			/* for flag in ckpt */
 	u64 ckpt_crc;				/* CRC of cp1 in a cp pack */
-	int cur_cp_pack;			/* remain current cp pack */
 	struct inode *meta_inode;		/* cache meta blocks */
 	struct mutex cp_mutex;			/* checkpoint procedure lock */
 	struct rw_semaphore cp_rwsem;		/* blocking FS operations */
@@ -1810,25 +1806,20 @@ static inline void *__bitmap_ptr(struct f2fs_sb_info *sbi, int flag)
 
 static inline block_t __start_cp_addr(struct f2fs_sb_info *sbi)
 {
-	block_t start_addr = le32_to_cpu(F2FS_RAW_SUPER(sbi)->cp_blkaddr);
+	block_t start_addr;
+	struct f2fs_checkpoint *ckpt = F2FS_CKPT(sbi);
+	unsigned long long ckpt_version = cur_cp_version(ckpt);
 
-	if (sbi->cur_cp_pack == 2)
+	start_addr = le32_to_cpu(F2FS_RAW_SUPER(sbi)->cp_blkaddr);
+
+	/*
+	 * odd numbered checkpoint should at cp segment 0
+	 * and even segment must be at cp segment 1
+	 */
+	if (!(ckpt_version & 1))
 		start_addr += sbi->blocks_per_seg;
+
 	return start_addr;
-}
-
-static inline block_t __start_cp_next_addr(struct f2fs_sb_info *sbi)
-{
-	block_t start_addr = le32_to_cpu(F2FS_RAW_SUPER(sbi)->cp_blkaddr);
-
-	if (sbi->cur_cp_pack == 1)
-		start_addr += sbi->blocks_per_seg;
-	return start_addr;
-}
-
-static inline void __set_cp_next_pack(struct f2fs_sb_info *sbi)
-{
-	sbi->cur_cp_pack = (sbi->cur_cp_pack == 1) ? 2 : 1;
 }
 
 static inline block_t __start_sum_addr(struct f2fs_sb_info *sbi)
@@ -2086,7 +2077,6 @@ enum {
 	FI_ACL_MODE,		/* indicate acl mode */
 	FI_NO_ALLOC,		/* should not allocate any blocks */
 	FI_FREE_NID,		/* free allocated nide */
-	FI_UPDATE_DIR,		/* should update inode block for consistency */
 	FI_NO_EXTENT,		/* not to use the extent cache */
 	FI_INLINE_XATTR,	/* used for inline xattr */
 	FI_INLINE_DATA,		/* used for inline data*/
@@ -2452,39 +2442,6 @@ static inline block_t device_free_space_threshold(struct f2fs_sb_info *sbi)
 					DEVICE_FREE_SPACE_PERCENT) / 100;
 }
 
-#define __is_meta_io(fio) (PAGE_TYPE_OF_BIO(fio->type) == META &&	\
-				(!is_read_io(fio->rw) || fio->is_meta))
-
-bool f2fs_is_valid_blkaddr(struct f2fs_sb_info *sbi,
-					block_t blkaddr, int type);
-void f2fs_msg(struct super_block *sb, const char *level, const char *fmt, ...);
-static inline void verify_blkaddr(struct f2fs_sb_info *sbi,
-					block_t blkaddr, int type)
-{
-	if (!f2fs_is_valid_blkaddr(sbi, blkaddr, type)) {
-		f2fs_msg(sbi->sb, KERN_ERR,
-			"invalid blkaddr: %u, type: %d, run fsck to fix.",
-			blkaddr, type);
-		f2fs_bug_on(sbi, 1);
-	}
-}
-
-static inline bool __is_valid_data_blkaddr(block_t blkaddr)
-{
-	if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR)
-		return false;
-	return true;
-}
-
-static inline bool is_valid_data_blkaddr(struct f2fs_sb_info *sbi,
-						block_t blkaddr)
-{
-	if (!__is_valid_data_blkaddr(blkaddr))
-		return false;
-	verify_blkaddr(sbi, blkaddr, DATA_GENERIC);
-	return true;
-}
-
 /*
  * file.c
  */
@@ -2694,29 +2651,31 @@ void stop_discard_thread(struct f2fs_sb_info *sbi);
  * checkpoint.c
  */
 void f2fs_stop_checkpoint(struct f2fs_sb_info *sbi, bool end_io);
-struct page *grab_meta_page(struct f2fs_sb_info *, pgoff_t);
-struct page *get_meta_page(struct f2fs_sb_info *, pgoff_t);
-struct page *get_tmp_page(struct f2fs_sb_info *, pgoff_t);
-bool f2fs_is_valid_blkaddr(struct f2fs_sb_info *sbi,
-					block_t blkaddr, int type);
-int ra_meta_pages(struct f2fs_sb_info *, block_t, int, int, bool);
-void ra_meta_pages_cond(struct f2fs_sb_info *, pgoff_t);
-long sync_meta_pages(struct f2fs_sb_info *, enum page_type, long);
-void add_dirty_inode(struct f2fs_sb_info *, nid_t, int type);
-void remove_dirty_inode(struct f2fs_sb_info *, nid_t, int type);
-void release_dirty_inode(struct f2fs_sb_info *);
-bool exist_written_data(struct f2fs_sb_info *, nid_t, int);
-int acquire_orphan_inode(struct f2fs_sb_info *);
-void release_orphan_inode(struct f2fs_sb_info *);
-void add_orphan_inode(struct f2fs_sb_info *, nid_t);
-void remove_orphan_inode(struct f2fs_sb_info *, nid_t);
-int recover_orphan_inodes(struct f2fs_sb_info *);
-int get_valid_checkpoint(struct f2fs_sb_info *);
-void update_dirty_page(struct inode *, struct page *);
-void remove_dirty_dir_inode(struct inode *);
-void sync_dirty_dir_inodes(struct f2fs_sb_info *);
-void write_checkpoint(struct f2fs_sb_info *, struct cp_control *);
-void init_ino_entry_info(struct f2fs_sb_info *);
+struct page *grab_meta_page(struct f2fs_sb_info *sbi, pgoff_t index);
+struct page *get_meta_page(struct f2fs_sb_info *sbi, pgoff_t index);
+struct page *get_tmp_page(struct f2fs_sb_info *sbi, pgoff_t index);
+bool is_valid_blkaddr(struct f2fs_sb_info *sbi, block_t blkaddr, int type);
+int ra_meta_pages(struct f2fs_sb_info *sbi, block_t start, int nrpages,
+			int type, bool sync);
+void ra_meta_pages_cond(struct f2fs_sb_info *sbi, pgoff_t index);
+long sync_meta_pages(struct f2fs_sb_info *sbi, enum page_type type,
+			long nr_to_write);
+void add_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int type);
+void remove_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int type);
+void release_ino_entry(struct f2fs_sb_info *sbi, bool all);
+bool exist_written_data(struct f2fs_sb_info *sbi, nid_t ino, int mode);
+int f2fs_sync_inode_meta(struct f2fs_sb_info *sbi);
+int acquire_orphan_inode(struct f2fs_sb_info *sbi);
+void release_orphan_inode(struct f2fs_sb_info *sbi);
+void add_orphan_inode(struct inode *inode);
+void remove_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino);
+int recover_orphan_inodes(struct f2fs_sb_info *sbi);
+int get_valid_checkpoint(struct f2fs_sb_info *sbi);
+void update_dirty_page(struct inode *inode, struct page *page);
+void remove_dirty_inode(struct inode *inode);
+int sync_dirty_inodes(struct f2fs_sb_info *sbi, enum inode_type type);
+int write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc);
+void init_ino_entry_info(struct f2fs_sb_info *sbi);
 int __init create_checkpoint_caches(void);
 void destroy_checkpoint_caches(void);
 

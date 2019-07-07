@@ -548,9 +548,6 @@ void f2fs_balance_fs(struct f2fs_sb_info *sbi, bool need)
 
 void f2fs_balance_fs_bg(struct f2fs_sb_info *sbi)
 {
-	if (unlikely(is_sbi_flag_set(sbi, SBI_POR_DOING)))
-		return;
-
 	/* try to shrink extent cache when there is no enough memory */
 	if (!available_free_memory(sbi, EXTENT_CACHE))
 		f2fs_shrink_extent_tree(sbi, EXTENT_CACHE_SHRINK_NUMBER);
@@ -2075,7 +2072,7 @@ bool is_checkpointed_data(struct f2fs_sb_info *sbi, block_t blkaddr)
 	struct seg_entry *se;
 	bool is_cp = false;
 
-	if (!is_valid_data_blkaddr(sbi, blkaddr))
+	if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR)
 		return true;
 
 	mutex_lock(&sit_i->sentry_lock);
@@ -2859,7 +2856,7 @@ void f2fs_wait_on_encrypted_page_writeback(struct f2fs_sb_info *sbi,
 {
 	struct page *cpage;
 
-	if (!is_valid_data_blkaddr(sbi, blkaddr))
+	if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR)
 		return;
 
 	cpage = find_lock_page(META_MAPPING(sbi), blkaddr);
@@ -3523,7 +3520,7 @@ static int build_curseg(struct f2fs_sb_info *sbi)
 }
 /*lint -restore*/
 
-static int build_sit_entries(struct f2fs_sb_info *sbi)
+static void build_sit_entries(struct f2fs_sb_info *sbi)
 {
 	struct sit_info *sit_i = SIT_I(sbi);
 	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_COLD_DATA);
@@ -3533,8 +3530,6 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 	int sit_blk_cnt = SIT_BLK_CNT(sbi);
 	unsigned int i, start, end;
 	unsigned int readed, start_blk = 0;
-	int nrpages = MAX_BIO_BLOCKS(sbi);
-	int err = 0;
 
 	do {
 		readed = ra_meta_pages(sbi, start_blk, BIO_MAX_PAGES,
@@ -3553,9 +3548,7 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 			sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
 			f2fs_put_page(page, 1);
 
-			err = check_block_count(sbi, start, &sit);
-			if (err)
-				return err;
+			check_block_count(sbi, start, &sit);
 			seg_info_from_raw_sit(se, &sit);
 
 			/* build discard map only one time */
@@ -3584,24 +3577,13 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 	for (i = 0; i < sits_in_cursum(journal); i++) {
 		unsigned int old_valid_blocks;
 
-		start = le32_to_cpu(segno_in_journal(sum, i));
-		if (start >= MAIN_SEGS(sbi)) {
-			f2fs_msg(sbi->sb, KERN_ERR,
-					"Wrong journal entry on segno %u",
-					start);
-			set_sbi_flag(sbi, SBI_NEED_FSCK);
-			err = -EINVAL;
-			break;
-		}
-
+		start = le32_to_cpu(segno_in_journal(journal, i));
 		se = &sit_i->sentries[start];
 		sit = sit_in_journal(journal, i);
 
 		old_valid_blocks = se->valid_blocks;
 
-		err = check_block_count(sbi, start, &sit);
-		if (err)
-			break;
+		check_block_count(sbi, start, &sit);
 		seg_info_from_raw_sit(se, &sit);
 
 		if (f2fs_discard_en(sbi)) {
@@ -3621,7 +3603,6 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 				se->valid_blocks - old_valid_blocks;
 	}
 	up_read(&curseg->journal_rwsem);
-	return err;
 }
 
 static void init_free_segmap(struct f2fs_sb_info *sbi)
@@ -3786,9 +3767,7 @@ int build_segment_manager(struct f2fs_sb_info *sbi)
 		return err;
 
 	/* reinit free segmap based on SIT */
-	err = build_sit_entries(sbi);
-	if (err)
-		return err;
+	build_sit_entries(sbi);
 
 	init_free_segmap(sbi);
 	err = build_dirty_segmap(sbi);

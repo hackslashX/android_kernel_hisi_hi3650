@@ -245,7 +245,6 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, int type,
 		struct list_head *head, struct radix_tree_root *root)
 {
 	struct curseg_info *curseg;
-	struct inode *inode;
 	struct page *page = NULL;
 	block_t blkaddr;
 	int err = 0;
@@ -257,7 +256,7 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, int type,
 	while (1) {
 		struct fsync_inode_entry *entry;
 
-		if (!f2fs_is_valid_blkaddr(sbi, blkaddr, META_POR))
+		if (!is_valid_blkaddr(sbi, blkaddr, META_POR))
 			return 0;
 
 		page = get_tmp_page(sbi, blkaddr);
@@ -301,16 +300,6 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, int type,
 				break;
 			}
 
-			/* add this fsync inode to the list */
-			entry = add_fsync_inode(head, inode);
-			if (!entry) {
-				err = -ENOMEM;
-				iput(inode);
-				break;
-			}
-		}
-		entry->blkaddr = blkaddr;
-
 			/* add this fsync inode to the radix tree */
 			if (root)
 				__add_dir_entry(root, ino_of_node(page), entry);
@@ -333,14 +322,6 @@ next:
 	}
 	f2fs_put_page(page, 1);
 	return err;
-}
-
-static void destroy_fsync_dnodes(struct list_head *head)
-{
-	struct fsync_inode_entry *entry, *tmp;
-
-	list_for_each_entry_safe(entry, tmp, head, list)
-		del_fsync_inode(entry);
 }
 
 static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
@@ -519,7 +500,7 @@ retry_dn:
 		}
 
 		/* dest is valid block, try to recover from src to dest */
-		if (f2fs_is_valid_blkaddr(sbi, dest, META_POR)) {
+		if (is_valid_blkaddr(sbi, dest, META_POR)) {
 
 			if (src == NULL_ADDR) {
 				err = reserve_new_block(&dn);
@@ -625,7 +606,7 @@ static int recover_data(struct f2fs_sb_info *sbi, int type,
 	block_t blkaddr;
 
 	/* get node pages in the current segment */
-	curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
+	curseg = CURSEG_I(sbi, type);
 	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
 
 	if (unlikely(list_empty(head)))
@@ -634,7 +615,7 @@ static int recover_data(struct f2fs_sb_info *sbi, int type,
 	while (1) {
 		struct fsync_inode_entry *entry;
 
-		if (!f2fs_is_valid_blkaddr(sbi, blkaddr, META_POR))
+		if (!is_valid_blkaddr(sbi, blkaddr, META_POR))
 			break;
 
 		ra_meta_pages_cond(sbi, blkaddr);
@@ -885,7 +866,6 @@ int recover_fsync_data(struct f2fs_sb_info *sbi, bool check_only)
 	err = find_fsync_dnodes(sbi, CURSEG_WARM_NODE, &regular_list, NULL);
 	if (err)
 		goto out;
-	}
 
 	if (list_empty(&dir_list) && list_empty(&regular_list))
 		goto out;
