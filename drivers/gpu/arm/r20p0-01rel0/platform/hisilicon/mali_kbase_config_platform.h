@@ -31,7 +31,7 @@
  * Attached value: number in kHz
  * Default value: NA
  */
-#define GPU_FREQ_KHZ_MIN 120000
+#define GPU_FREQ_KHZ_MIN 360000
 
 #define POWER_MANAGEMENT_CALLBACKS		(&pm_callbacks)
 
