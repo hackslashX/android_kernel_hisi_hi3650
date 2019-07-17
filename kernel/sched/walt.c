@@ -38,7 +38,7 @@ static __read_mostly unsigned int walt_window_stats_policy =
 	WINDOW_STATS_MAX_RECENT_AVG;
 static __read_mostly unsigned int walt_account_wait_time = 1;
 static __read_mostly unsigned int walt_freq_account_wait_time = 0;
-static __read_mostly unsigned int walt_io_is_busy = 1;
+static __read_mostly unsigned int walt_io_is_busy = 0;
 
 unsigned int sysctl_sched_walt_init_task_load_pct = 15;
 
@@ -52,7 +52,6 @@ static unsigned int min_possible_efficiency = 1024;
  * Maximum possible frequency across all cpus. Task demand and cpu
  * capacity (cpu_power) metrics are scaled in reference to it.
  */
-
 static unsigned int max_possible_freq = 1;
 
 /*
@@ -78,23 +77,10 @@ __read_mostly unsigned int walt_ravg_window = 20000000;
 /* Max window size (in ns) = 1s */
 #define MAX_SCHED_RAVG_WINDOW 1000000000
 
-#ifdef CONFIG_HZ_156
-/*
- * Adjust for Proto's custom Kirin Timer frequency
- */
-__read_mostly unsigned int walt_ravg_window =
-					    (15000000 / TICK_NSEC) * TICK_NSEC;
-#else
-__read_mostly unsigned int walt_ravg_window =
-					    (20000000 / TICK_NSEC) * TICK_NSEC;
-#endif
-#define MIN_SCHED_RAVG_WINDOW ((10000000 / TICK_NSEC) * TICK_NSEC)
-#define MAX_SCHED_RAVG_WINDOW ((1000000000 / TICK_NSEC) * TICK_NSEC)
->>>>>>> 583f317... WALT: Set I/O flag and Introduce Specific Window Timer for Proto
-
 static unsigned int sync_cpu;
 static ktime_t ktime_last;
 static bool walt_ktime_suspended;
+int hisi_test_fast_cpu(int cpu);
 
 static unsigned int task_load(struct task_struct *p)
 {
@@ -1142,3 +1128,4 @@ void walt_init_new_task_load(struct task_struct *p)
 	for (i = 0; i < RAVG_HIST_SIZE_MAX; ++i)
 		p->ravg.sum_history[i] = init_load_windows;
 }
+
