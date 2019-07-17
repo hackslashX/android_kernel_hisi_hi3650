@@ -4628,7 +4628,7 @@ schedtune_task_margin(struct task_struct *task);
 static bool cpu_overutilized(int cpu);
 static bool cpu_halfutilized(int cpu);
 static bool need_spread_task(int cpu);
-static inline unsigned long boosted_cpu_util(int cpu);
+unsigned long boosted_cpu_util(int cpu);
 #else
 #define boosted_cpu_util(cpu) cpu_util(cpu)
 #endif
@@ -5998,7 +5998,7 @@ schedtune_task_margin(struct task_struct *task)
 
 #endif /* CONFIG_SCHED_TUNE */
 
-static inline unsigned long
+unsigned long
 boosted_cpu_util(int cpu)
 {
 	unsigned long util = cpu_util(cpu);
