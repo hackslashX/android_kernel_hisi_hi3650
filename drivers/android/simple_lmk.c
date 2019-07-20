@@ -120,7 +120,7 @@ static unsigned long find_victims(int *vindex, short target_adj)
 		victims[*vindex].size = get_mm_rss(vtsk->mm);
 
 		/* Keep track of the number of pages that have been found */
-		pages_found += victims[*vindex].size;
+		pages_found += varr[*vindex].size;
 
 		/* Make sure there's space left in the victim array */
 		if (++*vindex == MAX_VICTIMS)
