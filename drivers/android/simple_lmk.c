@@ -236,8 +236,7 @@ static int simple_lmk_reclaim_thread(void *data)
 	sched_setscheduler_nocheck(current, SCHED_FIFO, &sched_max_rt_prio);
 
 	while (1) {
-	wait_event(oom_waitq, atomic_add_unless(&needs_reclaim, -1, 0));
-		scan_and_kill(MIN_FREE_PAGES);
+		wait_event(oom_waitq, READ_ONCE(needs_reclaim));
 	}
 
 	return 0;
