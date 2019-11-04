@@ -297,7 +297,6 @@ static int simple_lmk_init_set(const char *val, const struct kernel_param *kp)
 				     "simple_lmkd");
 		BUG_ON(IS_ERR(thread));
 	}
-
 	return 0;
 }
 
