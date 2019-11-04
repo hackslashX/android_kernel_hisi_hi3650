@@ -3818,7 +3818,6 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
 	 */
 	if (!remaining &&
 	    prepare_kswapd_sleep(pgdat, reclaim_order, classzone_idx)) {
-		simple_lmk_stop_reclaim();
 		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
 
 
