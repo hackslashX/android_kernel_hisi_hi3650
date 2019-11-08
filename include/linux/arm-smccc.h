@@ -16,7 +16,6 @@
 
 #include <linux/linkage.h>
 #include <linux/types.h>
-#include <asm/compiler.h>
 
 /*
  * This file provides common defines for ARM SMC Calling Convention as
@@ -82,37 +81,10 @@ struct arm_smccc_res {
  * to the SMC instruction. The return values are updated with the content
  * from register 0 to 3 on return from the SMC instruction.
  */
-static inline void arm_smccc_smc(unsigned long a0, unsigned long a1,
+asmlinkage void arm_smccc_smc(unsigned long a0, unsigned long a1,
 			unsigned long a2, unsigned long a3, unsigned long a4,
 			unsigned long a5, unsigned long a6, unsigned long a7,
-			struct arm_smccc_res *res)
-{
-	register unsigned long arg0 asm("x0") = a0;
-	register unsigned long arg1 asm("x1") = a1;
-	register unsigned long arg2 asm("x2") = a2;
-	register unsigned long arg3 asm("x3") = a3;
-	register unsigned long arg4 asm("x4") = a4;
-	register unsigned long arg5 asm("x5") = a5;
-	register unsigned long arg6 asm("x6") = a6;
-	register unsigned long arg7 asm("x7") = a7;
-	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		__asmeq("%2", "x2")
-		__asmeq("%3", "x3")
-		__asmeq("%4", "x4")
-		__asmeq("%5", "x5")
-		__asmeq("%6", "x6")
-		__asmeq("%7", "x7")
-		"smc #0\n"
-		: "+r" (arg0), "+r" (arg1), "+r" (arg2), "+r" (arg3)
-		: "r" (arg4), "r" (arg5), "r" (arg6), "r" (arg7));
-
-	res->a0 = arg0;
-	res->a1 = arg1;
-	res->a2 = arg2;
-	res->a3 = arg3;
-}
+			struct arm_smccc_res *res);
 
 /**
  * arm_smccc_hvc() - make HVC calls
@@ -124,36 +96,9 @@ static inline void arm_smccc_smc(unsigned long a0, unsigned long a1,
  * to 7 prior to the HVC instruction. The return values are updated with
  * the content from register 0 to 3 on return from the HVC instruction.
  */
-static inline void arm_smccc_hvc(unsigned long a0, unsigned long a1,
+asmlinkage void arm_smccc_hvc(unsigned long a0, unsigned long a1,
 			unsigned long a2, unsigned long a3, unsigned long a4,
 			unsigned long a5, unsigned long a6, unsigned long a7,
-			struct arm_smccc_res *res)
-{
-	register unsigned long arg0 asm("x0") = a0;
-	register unsigned long arg1 asm("x1") = a1;
-	register unsigned long arg2 asm("x2") = a2;
-	register unsigned long arg3 asm("x3") = a3;
-	register unsigned long arg4 asm("x4") = a4;
-	register unsigned long arg5 asm("x5") = a5;
-	register unsigned long arg6 asm("x6") = a6;
-	register unsigned long arg7 asm("x7") = a7;
-	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		__asmeq("%2", "x2")
-		__asmeq("%3", "x3")
-		__asmeq("%4", "x4")
-		__asmeq("%5", "x5")
-		__asmeq("%6", "x6")
-		__asmeq("%7", "x7")
-		"hvc #0\n"
-		: "+r" (arg0), "+r" (arg1), "+r" (arg2), "+r" (arg3)
-		: "r" (arg4), "r" (arg5), "r" (arg6), "r" (arg7));
-
-	res->a0 = arg0;
-	res->a1 = arg1;
-	res->a2 = arg2;
-	res->a3 = arg3;
-}
+			struct arm_smccc_res *res);
 
 #endif /*__LINUX_ARM_SMCCC_H*/
