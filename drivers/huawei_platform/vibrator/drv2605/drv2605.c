@@ -96,7 +96,7 @@ int hisi_nve_direct_access(struct hisi_nve_info_user *user_info);
 #define LRA_RATED_VOLTAGE               0x34
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE     0x76
 
-#define SKIP_LRA_AUTOCAL        0
+#define SKIP_LRA_AUTOCAL        1
 #define GO_BIT_POLL_INTERVAL    15
 
 #if EFFECT_LIBRARY == LIBRARY_A
@@ -359,12 +359,12 @@ static void drv2605_change_mode(struct i2c_client *client, char mode)
 
 /*******************************************************************************************
 Function:	read_vibrator_calib_value_from_nv
-Description:   ï¿½ï¿½È¡NVï¿½ï¿½ï¿½Ðµï¿½vibrator Ð£×¼ï¿½ï¿½ï¿½ï¿½
-Data Accessed:  ï¿½ï¿½
-Data Updated:   ï¿½ï¿½
-Input:         ï¿½ï¿½
-Output:         ï¿½ï¿½
-Return:         ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½ï¿½ï¿½Ï¢: 0->ï¿½É¹ï¿½, -1->Ê§ï¿½ï¿½
+Description:   ¶ÁÈ¡NVÏîÖÐµÄvibrator Ð£×¼Êý¾Ý
+Data Accessed:  ÎÞ
+Data Updated:   ÎÞ
+Input:         ÎÞ
+Output:         ÎÞ
+Return:         ³É¹¦»òÕßÊ§°ÜÐÅÏ¢: 0->³É¹¦, -1->Ê§°Ü
 *******************************************************************************************/
 static int read_vibrator_calib_value_from_nv(void)
 {
@@ -396,12 +396,12 @@ static int read_vibrator_calib_value_from_nv(void)
 
 /*******************************************************************************************
 Function:	write_vibrator_calib_value_to_nv
-Description:  ï¿½ï¿½tempï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½NV ï¿½ï¿½ï¿½ï¿½
-Data Accessed:  ï¿½ï¿½
-Data Updated:   ï¿½ï¿½
+Description:  ½«tempÊý¾ÝÐ´ÈëNV ÏîÖÐ
+Data Accessed:  ÎÞ
+Data Updated:   ÎÞ
 Input:        vibrator Ð£×¼Öµ
-Output:         ï¿½ï¿½
-Return:         ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½ï¿½ï¿½Ï¢: 0->ï¿½É¹ï¿½, -1->Ê§ï¿½ï¿½
+Output:         ÎÞ
+Return:         ³É¹¦»òÕßÊ§°ÜÐÅÏ¢: 0->³É¹¦, -1->Ê§°Ü
 *******************************************************************************************/
 static int write_vibrator_calib_value_to_nv(char *temp)
 {
@@ -441,12 +441,12 @@ static int write_vibrator_calib_value_to_nv(char *temp)
 
 /*******************************************************************************************
 Function:	save_vibrator_calib_value_to_reg
-Description:  ï¿½ï¿½Ð£×¼ÖµÐ´ï¿½ï¿½Ð¾Æ¬ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½
-Data Accessed:  ï¿½ï¿½
-Data Updated:   ï¿½ï¿½
-Input:        ï¿½ï¿½
-Output:         ï¿½ï¿½
-Return:         ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½ï¿½ï¿½Ï¢: 0->ï¿½É¹ï¿½, -1->Ê§ï¿½ï¿½
+Description:  ½«Ð£×¼ÖµÐ´ÈëÐ¾Æ¬¼Ä´æÆ÷ÖÐ
+Data Accessed:  ÎÞ
+Data Updated:   ÎÞ
+Input:        ÎÞ
+Output:         ÎÞ
+Return:         ³É¹¦»òÕßÊ§°ÜÐÅÏ¢: 0->³É¹¦, -1->Ê§°Ü
 *******************************************************************************************/
 static int save_vibrator_calib_value_to_reg(void)
 {
