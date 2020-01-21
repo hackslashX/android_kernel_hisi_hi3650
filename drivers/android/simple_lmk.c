@@ -236,22 +236,19 @@ static int simple_lmk_reclaim_thread(void *data)
 	sched_setscheduler_nocheck(current, SCHED_FIFO, &sched_max_rt_prio);
 
 	while (1) {
-		wait_event(oom_waitq, atomic_read(&needs_reclaim));
-
-		/*
-		 * Kill a batch of processes and wait for their memory to be
-		 * freed. After their memory is freed, sleep for 20 ms to give
-		 * OOM'd allocations a chance to scavenge for the newly-freed
-		 * pages. Rinse and repeat while there are still OOM'd
-		 * allocations.
-		 */
-		do {
-			scan_and_kill(MIN_FREE_PAGES);
-			msleep(20);
-		} while (atomic_read(&needs_reclaim));
+		wait_event(oom_waitq, atomic_read_acquire(&needs_reclaim));
+		scan_and_kill(MIN_FREE_PAGES);
+		atomic_set_release(&needs_reclaim, 0);
 	}
 
 	return 0;
+}
+
+void simple_lmk_decide_reclaim(int kswapd_priority)
+{
+	if (kswapd_priority == CONFIG_ANDROID_SIMPLE_LMK_AGGRESSION &&
+	    !atomic_cmpxchg(&needs_reclaim, 0, 1))
+		wake_up(&oom_waitq);
 }
 
 void simple_lmk_mm_freed(struct mm_struct *mm)
