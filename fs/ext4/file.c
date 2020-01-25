@@ -170,10 +170,18 @@ ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 
 	ret = __generic_file_write_iter(iocb, from);
 	mutex_unlock(&inode->i_mutex);
+        /*
+	 * Unaligned direct AIO must be the only IO in flight. Otherwise
+	 * overlapping aligned IO after unaligned might result in data
+	 * corruption.
+	 */
+	if (ret == -EIOCBQUEUED && unaligned_aio)
+		ext4_unwritten_wait(inode);
 
 	if (ret > 0) {
 		ssize_t err;
-
+	
+	inode_unlock(inode);
 		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
 		if (err < 0)
 			ret = err;
