@@ -54,6 +54,7 @@ static DEFINE_RWLOCK(mm_free_lock);
 static int nr_victims;
 static atomic_t needs_reclaim = ATOMIC_INIT(0);
 static atomic_t nr_killed = ATOMIC_INIT(0);
+
 static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 {
 	const struct victim_info *lhs = (typeof(lhs))lhs_ptr;
