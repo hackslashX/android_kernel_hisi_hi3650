@@ -221,6 +221,15 @@ static void scan_and_kill(unsigned long pages_needed)
 			set_tsk_thread_flag(t, TIF_MEMDIE);
 		rcu_read_unlock();
 
+		/* Grab a reference to the victim for later before unlocking */
+		get_task_struct(vtsk);
+		task_unlock(vtsk);
+	}
+
+	/* Try to speed up the death process now that we can schedule again */
+	for (i = 0; i < nr_to_kill; i++) {
+		struct task_struct *vtsk = victims[i].tsk;
+
 		/* Elevate the victim to SCHED_RR with zero RT priority */
 		sched_setscheduler_nocheck(vtsk, SCHED_RR, &sched_zero_prio);
 
