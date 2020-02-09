@@ -185,7 +185,7 @@ static void scan_and_kill(unsigned long pages_needed)
 	atomic_set_release(&victims_to_kill, nr_to_kill);
 	for (i = 0; i < nr_to_kill; i++) {
 		struct victim_info *victim = &victims[i];
-		struct task_struct *vtsk = victim->tsk;
+		struct task_struct *t, *vtsk = victim->tsk;
 
 		pr_info("Killing %s with adj %d to free %lu KiB\n", vtsk->comm,
 			vtsk->signal->oom_score_adj,
@@ -193,6 +193,12 @@ static void scan_and_kill(unsigned long pages_needed)
 
 		/* Accelerate the victim's death by forcing the kill signal */
 		do_send_sig_info(SIGKILL, SEND_SIG_FORCED, vtsk, true);
+
+		/* Mark the thread group dead so that other kernel code knows */
+		rcu_read_lock();
+		for_each_thread(vtsk, t)
+			set_tsk_thread_flag(t, TIF_MEMDIE);
+		rcu_read_unlock();
 
 		/* Increase the victim's priority to make it die faster */
 		set_user_nice(vtsk, MIN_NICE);
