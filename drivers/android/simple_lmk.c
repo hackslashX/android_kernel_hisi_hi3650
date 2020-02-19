@@ -267,6 +267,13 @@ static int simple_lmk_reclaim_thread(void *data)
 	return 0;
 }
 
+void simple_lmk_decide_reclaim(int kswapd_priority)
+{
+	if (kswapd_priority == CONFIG_ANDROID_SIMPLE_LMK_AGGRESSION &&
+	    !atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
+		wake_up(&oom_waitq);
+}
+
 void simple_lmk_mm_freed(struct mm_struct *mm)
 {
 	int i;
