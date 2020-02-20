@@ -27,6 +27,10 @@ struct victim_info {
 	unsigned long size;
 };
 
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+#define PROTECTED_APP_ADJ 1
+#endif
+
 /* Pulled from the Android framework. Lower adj means higher priority. */
 static const short adj_prio[] = {
 	906, /* CACHED_APP_MAX_ADJ */
@@ -45,6 +49,9 @@ static const short adj_prio[] = {
 	200, /* PERCEPTIBLE_APP_ADJ */
 	100, /* VISIBLE_APP_ADJ */
 	0    /* FOREGROUND_APP_ADJ */
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+	PROTECTED_APP_ADJ, /* PROTECTED APP */
+#endif
 };
 
 static struct victim_info victims[MAX_VICTIMS];
@@ -54,6 +61,21 @@ static DEFINE_RWLOCK(mm_free_lock);
 static int victims_to_kill;
 static atomic_t needs_reclaim = ATOMIC_INIT(0);
 static atomic_t nr_killed = ATOMIC_INIT(0);
+
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+// ".globallauncher"
+// "ndroid.launcher"
+// or just full package -> shortstring will be found in excludes anyway
+static char excludes[256] = ".globallauncher,tes.accubattery,chtype.swiftkey,m.android.phone,com.whatsapp";
+
+int simple_lmk_calculate_adj(int adj, char *comm) {
+	if(strstr(excludes, comm) != NULL) {
+		return PROTECTED_APP_ADJ;
+	}
+	return adj;
+}
+#endif
+
 static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 {
 	const struct victim_info *lhs = (typeof(lhs))lhs_ptr;
@@ -317,7 +339,39 @@ static const struct kernel_param_ops simple_lmk_init_ops = {
 	.set = simple_lmk_init_set
 };
 
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+int excludes_param_set(const char *buffer, const struct kernel_param *kp)
+{
+	char *new_excludes = (char *)buffer;
+	size_t new_excludes_len = strlen(new_excludes);
+
+	if (new_excludes_len > 0 && new_excludes[new_excludes_len - 1] == '\n')
+		new_excludes[new_excludes_len - 1] = '\0';
+
+	if (strlen(new_excludes) > sizeof(excludes)) {
+		pr_err("%s: string parameter too long\n", kp->name);
+		return -ENOSPC;
+	}
+
+	return param_set_copystring(new_excludes, kp);
+}
+
+static const struct kernel_param_ops excludes_param_ops = {
+	.set = excludes_param_set,
+	.get = param_get_string,
+};
+
+static struct kparam_string excludes_param_string = {
+	.maxlen = sizeof(excludes),
+	.string = excludes,
+};
+#endif
+
 /* Needed to prevent Android from thinking there's no LMK and thus rebooting */
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "lowmemorykiller."
 module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+module_param_cb(nokill, &excludes_param_ops, &excludes_param_string,
+		0644);
+#endif

@@ -105,6 +105,13 @@ config ANDROID_SIMPLE_LMK_TIMEOUT_MSEC
 	  needed. After the specified timeout elapses, Simple LMK will stop
 	  waiting and make itself available to kill more processes.
 
+config ANDROID_SIMPLE_LMK_EXTENDED
+	bool "Simple Android Low Memory Killer Extensions"
+	---help---
+	  Extends the simple LMK to be sensitive to memory pressure (free and
+	  available ram) because otherwise it would kill too much tasks on some
+	  devices running ksapd process more than expected.
+
 endif
 
 endif # if ANDROID

@@ -9,10 +9,18 @@ struct mm_struct;
 
 #ifdef CONFIG_ANDROID_SIMPLE_LMK
 void simple_lmk_mm_freed(struct mm_struct *mm);
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+int simple_lmk_calculate_adj(int adj, char *comm);
+#endif
 #else
 static inline void simple_lmk_mm_freed(struct mm_struct *mm)
 {
 }
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+int simple_lmk_calculate_adj(int adj, char *comm) {
+	return adj;
+}
+#endif
 #endif
 
 #endif /* _SIMPLE_LMK_H_ */
