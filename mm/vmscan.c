@@ -46,8 +46,6 @@
 #include <linux/oom.h>
 #include <linux/prefetch.h>
 #include <linux/printk.h>
-#include <linux/simple_lmk.h>
-
 
 #include <asm/tlbflush.h>
 #include <asm/div64.h> /*lint !e451 */
