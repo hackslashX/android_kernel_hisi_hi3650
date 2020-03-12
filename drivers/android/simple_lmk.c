@@ -178,7 +178,6 @@ bool simple_lmk_decide_reclaim_on_memory_pressure(void) {
 #endif // CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
 #endif // CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
 
-
 static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 {
 	const struct victim_info *lhs = (typeof(lhs))lhs_ptr;
