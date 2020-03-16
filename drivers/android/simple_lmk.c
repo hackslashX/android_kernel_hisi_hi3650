@@ -12,6 +12,11 @@
 #include <linux/sort.h>
 #include <linux/vmpressure.h>
 
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
+// for totalreserve_pages
+#include <linux/swap.h>
+#endif
+
 /* The minimum number of pages to free per reclaim */
 #define MIN_FREE_PAGES (CONFIG_ANDROID_SIMPLE_LMK_MINFREE * SZ_1M / PAGE_SIZE)
 
@@ -68,13 +73,111 @@ static atomic_t nr_killed = ATOMIC_INIT(0);
 // or just full package -> shortstring will be found in excludes anyway
 static char excludes[256] = ".globallauncher,tes.accubattery,chtype.swiftkey,m.android.phone,com.whatsapp";
 
+
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
+static unsigned long memory_available_min = 400000;
+static unsigned long memory_free_min = 32000;
+#endif
+
+static unsigned long pressure_calls = 0;
+static unsigned long pressure_calls_executed = 0;
+
 int simple_lmk_calculate_adj(int adj, char *comm) {
 	if(strstr(excludes, comm) != NULL) {
 		return PROTECTED_APP_ADJ;
 	}
 	return adj;
 }
-#endif
+
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
+bool simple_lmk_decide_reclaim_on_memory_pressure(void) {
+	struct sysinfo i;
+	long available;
+	unsigned long pagecache;
+	unsigned long wmark_low = 0;
+	unsigned long pages[NR_LRU_LISTS];
+	struct zone *zone;
+	int lru;
+	bool result = false;
+
+/*
+ * display in kilobytes.
+ */
+#define K(x) ((x) << (PAGE_SHIFT - 10))
+
+	si_meminfo(&i);
+	/*
+	i.totalram
+	i.sharedram
+	i.freeram -> used
+	i.bufferram
+	i.totalhigh
+	i.freehigh
+	i.mem_unit
+	*/
+
+	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
+		pages[lru] = global_page_state(NR_LRU_BASE + lru);
+
+	for_each_zone(zone)
+		wmark_low += zone->watermark[WMARK_LOW];
+
+	/*
+	 * Estimate the amount of memory available for userspace allocations,
+	 * without causing swapping.
+	 *
+	 * Free memory cannot be taken below the low watermark, before the
+	 * system starts swapping.
+	 */
+	available = i.freeram - totalreserve_pages;
+
+	/*
+	 * Not all the page cache can be freed, otherwise the system will
+	 * start swapping. Assume at least half of the page cache, or the
+	 * low watermark worth of cache, needs to stay.
+	 */
+	pagecache = pages[LRU_ACTIVE_FILE] + pages[LRU_INACTIVE_FILE];
+	pagecache -= min(pagecache / 2, wmark_low);
+	available += pagecache;
+
+	/*
+	 * Part of the reclaimable slab consists of items that are in use,
+	 * and cannot be freed. Cap this estimate at the low watermark.
+	 */
+	available += global_page_state(NR_SLAB_RECLAIMABLE) -
+		     min(global_page_state(NR_SLAB_RECLAIMABLE) / 2, wmark_low);
+
+	/*
+	 * Add the ioncache pool pages
+	 */
+	available += global_page_state(NR_IONCACHE_PAGES);
+
+	available += (long)global_page_state(NR_MALI_PAGES);
+
+	if (available < 0)
+		available = 0;
+
+	if (
+		(K(i.freeram) < memory_free_min) ||
+	    (K(available) < memory_available_min)
+	   ) {
+		result = true;
+	}
+
+	pr_info("result %u available %lu (%lu) free %lu (%lu)\n", result,
+		K(available), memory_available_min,
+		K(i.freeram), memory_free_min);
+
+	pressure_calls++;
+	if (result) {
+		pressure_calls_executed++;
+	}
+
+	return result;
+}
+#endif // CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
+#endif // CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
+
 
 static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 {
@@ -308,7 +411,11 @@ void simple_lmk_mm_freed(struct mm_struct *mm)
 static int simple_lmk_vmpressure_cb(struct notifier_block *nb,
 				    unsigned long pressure, void *data)
 {
-	if (pressure == 100 && !atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
+	if (pressure == 100 &&
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
+ simple_lmk_decide_reclaim_on_memory_pressure() && 
+#endif
+		!atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
 		wake_up(&oom_waitq);
 
 	return NOTIFY_OK;
@@ -365,6 +472,28 @@ static struct kparam_string excludes_param_string = {
 	.maxlen = sizeof(excludes),
 	.string = excludes,
 };
+
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
+static const struct kernel_param_ops memory_available_min_param_ops = {
+	.set = param_set_ulong,
+	.get = param_get_ulong,
+};
+
+static const struct kernel_param_ops memory_free_min_param_ops = {
+	.set = param_set_ulong,
+	.get = param_get_ulong,
+};
+#endif
+
+static const struct kernel_param_ops pressure_calls_param_ops = {
+	.set = param_set_ulong,
+	.get = param_get_ulong,
+};
+
+static const struct kernel_param_ops pressure_calls_executed_param_ops = {
+	.set = param_set_ulong,
+	.get = param_get_ulong,
+};
 #endif
 
 /* Needed to prevent Android from thinking there's no LMK and thus rebooting */
@@ -374,4 +503,14 @@ module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
 #ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
 module_param_cb(nokill, &excludes_param_ops, &excludes_param_string,
 		0644);
+#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
+module_param_cb(available_min, &memory_available_min_param_ops, &memory_available_min,
+		0644);
+module_param_cb(free_min, &memory_free_min_param_ops, &memory_free_min,
+		0644);
+#endif
+module_param_cb(calls, &pressure_calls_param_ops, &pressure_calls,
+		0444);
+module_param_cb(calls_executed, &pressure_calls_executed_param_ops, &pressure_calls_executed,
+		0444);
 #endif
