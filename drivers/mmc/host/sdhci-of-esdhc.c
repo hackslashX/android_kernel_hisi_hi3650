@@ -381,6 +381,30 @@ static int sdhci_esdhc_probe(struct platform_device *pdev)
 	sdhci_get_of_property(pdev);
 
 	np = pdev->dev.of_node;
+	pltfm_host = sdhci_priv(host);
+	esdhc = pltfm_host->priv;
+	if (esdhc->vendor_ver == VENDOR_V_22)
+		host->quirks2 |= SDHCI_QUIRK2_HOST_NO_CMD23;
+
+	if (esdhc->vendor_ver > VENDOR_V_22)
+		host->quirks &= ~SDHCI_QUIRK_NO_BUSY_IRQ;
+
+	if (of_find_compatible_node(NULL, NULL, "fsl,p2020-esdhc")) {
+		host->quirks |= SDHCI_QUIRK_RESET_AFTER_REQUEST;
+		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
+	}
+
+	if (of_device_is_compatible(np, "fsl,p5040-esdhc") ||
+	    of_device_is_compatible(np, "fsl,p5020-esdhc") ||
+	    of_device_is_compatible(np, "fsl,p4080-esdhc") ||
+	    of_device_is_compatible(np, "fsl,p1020-esdhc") ||
+	    of_device_is_compatible(np, "fsl,t1040-esdhc") ||
+	    of_device_is_compatible(np, "fsl,ls1021a-esdhc"))
+		host->quirks &= ~SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+
+	if (of_device_is_compatible(np, "fsl,ls1021a-esdhc"))
+		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
+
 	if (of_device_is_compatible(np, "fsl,p2020-esdhc")) {
 		/*
 		 * Freescale messed up with P2020 as it has a non-standard
