@@ -1,5 +1,6 @@
 /*
- * drivers/power/huawei_charger/charging_core.c
+ * drivers/power/huawei_charger/
+charging_core.c
  *
  *huawei charging core driver
  *

@@ -25,7 +25,7 @@
 #include <linux/of_address.h>
 #include <linux/slab.h>
 #include "inputhub_route.h"
-#include <sensor_detect.h>
+#include "sensor_detect.h"
 #include "sensor_info.h"
 #include <linux/version.h>
 #include <linux/pm_qos.h>

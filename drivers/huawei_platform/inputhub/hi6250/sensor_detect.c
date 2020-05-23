@@ -28,10 +28,10 @@
 #include <linux/uaccess.h>
 #include <linux/types.h>
 #include <linux/wakelock.h>
-#include <sensor_info.h>
+#include "sensor_info.h"
 #include "sensor_sys_info.h"
-#include <sensor_detect.h>
-#include <sensor_debug.h>
+#include "sensor_detect.h"
+#include "sensor_debug.h"
 #include <linux/mtd/hisi_nve_interface.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>

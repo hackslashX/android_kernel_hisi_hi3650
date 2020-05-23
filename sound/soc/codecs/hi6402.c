@@ -4713,6 +4713,7 @@ static int hi6402_audio_hw_params(struct snd_pcm_substream *substream,
 	rate = params_rate(params);
 
 	switch (rate) {
+        case 11025:
 	case 16000:
 	case 22500:
 	case 32000:

@@ -4375,3 +4375,4 @@ module_exit(charge_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("huawei charger module driver");
 MODULE_AUTHOR("HUAWEI Inc");
+

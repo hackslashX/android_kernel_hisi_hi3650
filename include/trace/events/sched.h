@@ -1217,3 +1217,4 @@ TRACE_EVENT(walt_migration_update_sum,
 
 /* This part must be outside protection */
 #include <trace/define_trace.h>
+

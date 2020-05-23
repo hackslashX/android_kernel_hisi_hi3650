@@ -58,3 +58,4 @@ config CPU_FREQ_POWER_STAT
 	default n
 	help
 	  Keep track of amount of power each task consumes and report power per uid
+

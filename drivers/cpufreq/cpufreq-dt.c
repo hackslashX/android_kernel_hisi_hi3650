@@ -31,6 +31,7 @@
 #include <linux/hisi/hisi_cpufreq_dt.h>
 #include <linux/hisi/hifreq_hotplug.h>
 
+
 struct private_data {
 	struct device *cpu_dev;
 	struct thermal_cooling_device *cdev;
@@ -43,7 +44,6 @@ static struct freq_attr *cpufreq_dt_attr[] = {
 	NULL,
 };
 
-#ifndef CONFIG_HISI_HW_VOTE_CPU_FREQ
 static int set_target(struct cpufreq_policy *policy, unsigned int index)
 {
 	struct private_data *priv = policy->driver_data;
@@ -53,10 +53,13 @@ static int set_target(struct cpufreq_policy *policy, unsigned int index)
 		return bL_hifreq_hotplug_set_target(policy, priv->cpu_dev, policy->freq_table[index].frequency);
 #endif
 
+
 	return dev_pm_opp_set_rate(priv->cpu_dev,
 				   policy->freq_table[index].frequency * 1000);
 }
 #endif
+
+
 /*
  * An earlier version of opp-v1 bindings used to name the regulator
  * "cpu0-supply", we still need to handle that for backwards compatibility.
@@ -298,7 +301,7 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 	policy->cpuinfo.transition_latency = transition_latency;
 
 #ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-	hisi_cpufreq_policy_cur_init(policy);
+	hisi_cpufreq_policy_cur_init(priv->cpu_hvdev, policy);
 #endif
 
 	return 0;
@@ -378,11 +381,10 @@ static struct cpufreq_driver dt_cpufreq_driver = {
 	.flags = CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
 #endif
 	.verify = cpufreq_generic_frequency_table_verify,
+	.target_index = set_target,
 #ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-	.target_index = hisi_hw_vote_target,
 	.get = hisi_cpufreq_get,
 #else
-	.target_index = set_target,
 	.get = cpufreq_generic_get,
 #endif
 	.init = cpufreq_init,

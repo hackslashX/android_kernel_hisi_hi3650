@@ -80,7 +80,6 @@ static inline int __cpuidle_set_driver(struct cpuidle_driver *drv)
 
 	return 0;
 }
-
 #else
 
 static struct cpuidle_driver *cpuidle_curr_driver;

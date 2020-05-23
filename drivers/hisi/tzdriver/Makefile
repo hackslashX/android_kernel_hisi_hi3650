@@ -30,3 +30,4 @@ ccflags-y += 	-Idrivers/video/hisi/dss \
 ifdef CONFIG_TEE_CFC
   rename-text-section-to := .cfc.text
 endif
+

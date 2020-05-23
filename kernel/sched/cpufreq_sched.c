@@ -497,3 +497,4 @@ static int __init cpufreq_sched_init(void)
 
 /* Try to make this the default governor */
 fs_initcall(cpufreq_sched_init);
+

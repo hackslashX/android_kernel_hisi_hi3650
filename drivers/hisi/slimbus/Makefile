@@ -5,8 +5,8 @@ ccflags-y += -Idrivers/devkit/audiokit/
 EXTRA_CFLAGS += -Idrivers/hisi/slimbus/vendor/candance/include
 EXTRA_CFLAGS +=	-Idrivers/hisi/slimbus/vendor/candance
 EXTRA_CFLAGS +=	-Isound/soc/hisilicon
-
-
+EXTRA_CFLAGS += -Idrivers/hisi/mntn/blackbox/platform_hifi/
+EXTRA_CFLAGS += -Idrivers/hisi/slimbus
 
 hisilicon-slimbus-platform-objs		:= vendor/candance/cps_bm.o vendor/candance/src/csmi.o vendor/candance/slimbus_drv.o
 hisilicon-slimbus-platform-objs		+= slimbus_6402.o slimbus.o slimbus_utils.o slimbus_6403.o

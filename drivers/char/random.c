@@ -300,14 +300,14 @@
  * The minimum number of bits of entropy before we wake up a read on
  * /dev/random.  Should be enough to do a significant reseed.
  */
-static int random_read_wakeup_bits = 64;
+static int random_read_wakeup_bits = 512;
 
 /*
  * If the entropy count falls under this number of bits, then we
  * should wake up processes which are selecting or polling on write
  * access to /dev/random.
  */
-static int random_write_wakeup_bits = 28 * OUTPUT_POOL_WORDS;
+static int random_write_wakeup_bits = 32 * OUTPUT_POOL_WORDS;
 
 /*
  * The minimum number of seconds between urandom pool reseeding.  We
@@ -1824,9 +1824,6 @@ unsigned int get_random_int(void)
 	__u32 *hash;
 	unsigned int ret;
 
-	if (arch_get_random_int(&ret))
-		return ret;
-
 	hash = get_cpu_var(get_random_int_hash);
 
 	hash[0] += current->pid + jiffies + random_get_entropy();
@@ -1845,9 +1842,6 @@ unsigned long get_random_long(void)
 {
 	__u32 *hash;
 	unsigned long ret;
-
-	if (arch_get_random_long(&ret))
-		return ret;
 
 	hash = get_cpu_var(get_random_int_hash);
 

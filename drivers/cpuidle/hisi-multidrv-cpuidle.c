@@ -11,6 +11,7 @@
 
 #define pr_fmt(fmt) "CPUidle arm64: " fmt
 
+#include <hisi/tzdriver/libhwsecurec/securec.h>
 #include <linux/cpuidle.h>
 #include <linux/cpumask.h>
 #include <linux/cpu_pm.h>
@@ -204,7 +205,7 @@ static int __init hisi_idle_drv_cpumask_init(struct cpuidle_driver *drv, int clu
 	if (!cpumask)
 		return -ENOMEM;
 
-	for_each_possible_cpu(cpu) {//lint !e713
+	for_each_possible_cpu(cpu) { //lint !e713 !e574
 		if (cpu_topology[cpu].cluster_id == cluster_id)
 			cpumask_set_cpu((unsigned int)cpu, cpumask);
 	}
@@ -240,7 +241,7 @@ static int __init hisi_idle_drv_init(struct cpuidle_driver *drv)
 	 * Call arch CPU operations in order to initialize
 	 * idle states suspend back-end specific data
 	 */
-	for_each_possible_cpu(cpu) {//lint !e713
+	for_each_possible_cpu(cpu) { //lint !e713 !e574
 		ret = arm_cpuidle_init((unsigned int)cpu);
 		if (ret) {
 			pr_err("CPU %d failed to init idle CPU ops\n", cpu);
@@ -277,7 +278,6 @@ static int __init hisi_multidrv_idle_init(struct cpuidle_driver *drv, int cluste
 		pr_err("fail to register cluster%d cpuidle drv.\n", cluster_id);
 		return ret;
 	}
-
 
 
 	return 0;

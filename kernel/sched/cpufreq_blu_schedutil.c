@@ -210,6 +210,8 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 	unsigned long max_cap, rt;
 	s64 delta;
 
+	struct sugov_cpu *loadcpu = &per_cpu(sugov_cpu, cpu);
+
 	max_cap = arch_scale_cpu_capacity(NULL, cpu);
 
 	sched_avg_update(rq);
@@ -231,7 +233,7 @@ static void sugov_set_iowait_boost(struct sugov_cpu *sg_cpu, u64 time,
 {
 	struct sugov_policy *sg_policy = sg_cpu->sg_policy;
 
-	if (!sg_policy->tunables->iowait_boost_enable)
+ 	if (!sg_policy->tunables->iowait_boost_enable)
 		return;
 
 	if (flags & SCHED_CPUFREQ_IOWAIT) {
@@ -496,21 +498,21 @@ static ssize_t iowait_boost_enable_show(struct gov_attr_set *attr_set,
 {
 	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
 
-	return sprintf(buf, "%u\n", tunables->iowait_boost_enable);
+ 	return sprintf(buf, "%u\n", tunables->iowait_boost_enable);
 }
 
-static ssize_t iowait_boost_enable_store(struct gov_attr_set *attr_set,
+ static ssize_t iowait_boost_enable_store(struct gov_attr_set *attr_set,
 					 const char *buf, size_t count)
 {
 	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
 	bool enable;
 
-	if (kstrtobool(buf, &enable))
+ 	if (kstrtobool(buf, &enable))
 		return -EINVAL;
 
-	tunables->iowait_boost_enable = enable;
+ 	tunables->iowait_boost_enable = enable;
 
-	return count;
+ 	return count;
 }
 
 static struct governor_attr up_rate_limit_us = __ATTR_RW(up_rate_limit_us);
@@ -632,12 +634,12 @@ static int sugov_init(struct cpufreq_policy *policy)
 	if (policy->governor_data)
 		return -EBUSY;
 
-	cpufreq_enable_fast_switch(policy);
+ 	cpufreq_enable_fast_switch(policy);
 
 	sg_policy = sugov_policy_alloc(policy);
 	if (!sg_policy) {
 		return -ENOMEM;
-		goto disable_fast_switch;
+ 		goto disable_fast_switch;
 	}
 
 	ret = sugov_kthread_create(sg_policy);
@@ -700,7 +702,7 @@ free_sg_policy:
 	sugov_policy_free(sg_policy);
 
 disable_fast_switch:
-	cpufreq_disable_fast_switch(policy);
+ 	cpufreq_disable_fast_switch(policy);
 
 	pr_err("initialization failed (error %d)\n", ret);
 	return ret;
@@ -726,7 +728,7 @@ static int sugov_exit(struct cpufreq_policy *policy)
 	sugov_kthread_stop(sg_policy);
 	sugov_policy_free(sg_policy);
 
-	cpufreq_disable_fast_switch(policy);
+ 	cpufreq_disable_fast_switch(policy);
 
 	return 0;
 }
@@ -830,3 +832,4 @@ static int __init sugov_register(void)
 	return cpufreq_register_governor(&blu_schedutil_gov);
 }
 fs_initcall(sugov_register);
+
