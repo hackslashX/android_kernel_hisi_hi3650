@@ -34,6 +34,7 @@ config IOSCHED_ROW
 config IOSCHED_MAPLE
 	tristate "Maple I/O scheduler"
 	depends on FB
+        default y
 
 config IOSCHED_CFQ
 	tristate "CFQ I/O scheduler"
@@ -101,6 +102,9 @@ choice
 	config DEFAULT_NOOP
 		bool "No-op"
 
+	config DEFAULT_MAPLE
+		bool "Maple" if IOSCHED_MAPLE=y
+
 endchoice
 
 config ROW_OPTIMIZATION
@@ -121,6 +125,7 @@ config DEFAULT_IOSCHED
 	default "fiops" if DEFAULT_FIOPS
 	default "zen" if DEFAULT_ZEN
 	default "noop" if DEFAULT_NOOP
+	default "maple" if DEFAULT_MAPLE
 
 endmenu
 
