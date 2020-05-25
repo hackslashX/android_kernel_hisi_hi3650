@@ -164,8 +164,6 @@ EXPORT_SYMBOL_GPL(rcu_unexpedite_gp);
 void rcu_end_inkernel_boot(void)
 {
 	rcu_unexpedite_gp();
-	if (rcu_normal_after_boot)
-		WRITE_ONCE(rcu_normal, 1);
 }
 
 #ifdef CONFIG_PREEMPT_RCU

@@ -121,7 +121,7 @@ static unsigned long find_victims(int *vindex, short target_adj)
 		victims[*vindex].size = get_mm_rss(vtsk->mm);
 
 		/* Keep track of the number of pages that have been found */
-		pages_found += varr[*vindex].size;
+		pages_found += victims[*vindex].size;
 
 		/* Make sure there's space left in the victim array */
 		if (++*vindex == MAX_VICTIMS)
@@ -285,7 +285,6 @@ static int simple_lmk_init_set(const char *val, const struct kernel_param *kp)
 		thread = kthread_run(simple_lmk_reclaim_thread, NULL,
 				     "simple_lmkd");
 		BUG_ON(IS_ERR(thread));
-		BUG_ON(vmpressure_notifier_register(&vmpressure_notif));
 	}
 
 	return 0;

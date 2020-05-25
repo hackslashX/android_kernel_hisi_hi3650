@@ -752,7 +752,6 @@ static inline void __mmput(struct mm_struct *mm)
 	}
 	if (mm->binfmt)
 		module_put(mm->binfmt->module);
-	set_bit(MMF_OOM_SKIP, &mm->flags);
 	simple_lmk_mm_freed(mm);
 	mmdrop(mm);
 }
