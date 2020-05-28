@@ -109,12 +109,6 @@ config ANDROID_SIMPLE_LMK_TIMEOUT_MSEC
 config ANDROID_SIMPLE_LMK_EXTENDED
 	bool "Simple Android Low Memory Killer Extensions"
 	---help---
-	  Extends the simple LMK to allow excluding processes from killing and
-	  added statistics.
-
-config ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
-	bool "Simple Android Low Memory Killer Memcontrol"
-	---help---
 	  Extends the simple LMK to be sensitive to memory pressure (free and
 	  available ram) because otherwise it would kill too much tasks on some
 	  devices running ksapd process more than expected.

@@ -12,11 +12,6 @@
 #include <linux/sort.h>
 #include <linux/vmpressure.h>
 
-#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
-// for totalreserve_pages
-#include <linux/swap.h>
-#endif
-
 /* The minimum number of pages to free per reclaim */
 #define MIN_FREE_PAGES (CONFIG_ANDROID_SIMPLE_LMK_MINFREE * SZ_1M / PAGE_SIZE)
 
@@ -291,11 +286,7 @@ void simple_lmk_mm_freed(struct mm_struct *mm)
 static int simple_lmk_vmpressure_cb(struct notifier_block *nb,
 				    unsigned long pressure, void *data)
 {
-	if (pressure == 100 &&
-#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED_MEMCONTROL
- simple_lmk_decide_reclaim_on_memory_pressure() && 
-#endif
-		!atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
+	if (pressure == 100 && !atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
 		wake_up(&oom_waitq);
 
 	return NOTIFY_OK;
