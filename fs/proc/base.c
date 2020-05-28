@@ -87,9 +87,6 @@
 #include <linux/slab.h>
 #include <linux/flex_array.h>
 #include <linux/posix-timers.h>
-#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
-#include <linux/simple_lmk.h>
-#endif
 #ifdef CONFIG_HARDWALL
 #include <asm/hardwall.h>
 #endif
@@ -1212,11 +1209,7 @@ static ssize_t oom_adj_write(struct file *file, const char __user *buf,
 		  current->comm, task_pid_nr(current), task_pid_nr(task),
 		  task_pid_nr(task));
 
-#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
-	task->signal->oom_score_adj = simple_lmk_calculate_adj(oom_adj, task->comm);
-#else
 	task->signal->oom_score_adj = oom_adj;
-#endif
 	trace_oom_score_adj_update(task);
 err_sighand:
 	unlock_task_sighand(task, &flags);
@@ -1302,11 +1295,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 		goto err_sighand;
 	}
 
-#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
-	task->signal->oom_score_adj = simple_lmk_calculate_adj((short)oom_score_adj, task->comm);
-#else
 	task->signal->oom_score_adj = (short)oom_score_adj;
-#endif
 	if (has_capability_noaudit(current, CAP_SYS_RESOURCE))
 		task->signal->oom_score_adj_min = (short)oom_score_adj;
 	trace_oom_score_adj_update(task);
