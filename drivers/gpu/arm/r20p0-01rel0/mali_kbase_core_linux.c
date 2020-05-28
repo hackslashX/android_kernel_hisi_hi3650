@@ -1079,6 +1079,7 @@ static int kbase_open(struct inode *inode, struct file *filp)
 {
 	struct kbase_device *kbdev = NULL;
 	struct kbase_context *kctx;
+        struct sched_param param = { .sched_priority = 20 };
 	int ret = 0;
 #ifdef CONFIG_HISI_DEBUG_FS
 	char kctx_name[64];
