@@ -32,10 +32,6 @@ struct victim_info {
 	unsigned long size;
 };
 
-#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
-#define PROTECTED_APP_ADJ 1
-#endif
-
 /* Pulled from the Android framework. Lower adj means higher priority. */
 static const short adj_prio[] = {
 	906, /* CACHED_APP_MAX_ADJ */
@@ -54,9 +50,6 @@ static const short adj_prio[] = {
 	200, /* PERCEPTIBLE_APP_ADJ */
 	100, /* VISIBLE_APP_ADJ */
 	0    /* FOREGROUND_APP_ADJ */
-#ifdef CONFIG_ANDROID_SIMPLE_LMK_EXTENDED
-	PROTECTED_APP_ADJ, /* PROTECTED APP */
-#endif
 };
 
 static struct victim_info victims[MAX_VICTIMS];
