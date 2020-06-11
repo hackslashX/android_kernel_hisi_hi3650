@@ -173,7 +173,7 @@ static void scan_and_kill(unsigned long pages_needed)
 	/* Hold an RCU read lock while traversing the global process list */
 	rcu_read_lock();
 	for (i = 0; i < ARRAY_SIZE(adj_prio); i++) {
-		pages_found += find_victims(&nr_found, adjs[i], adjs[i - 1]);
+		pages_found += find_victims(&nr_found, adj_prio[i]);
 		if (pages_found >= pages_needed || nr_found == MAX_VICTIMS)
 			break;
 	}
