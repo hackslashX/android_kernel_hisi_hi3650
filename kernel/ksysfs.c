@@ -234,7 +234,6 @@ static ssize_t arch_power_store(struct kobject *kobj, struct kobj_attribute *att
 KERNEL_ATTR_RW(arch_power);
 
 static struct attribute * sched_features_attrs[] = {
-	&gentle_fair_sleepers_attr.attr,
 	&arch_power_attr.attr,
 	NULL
 };
