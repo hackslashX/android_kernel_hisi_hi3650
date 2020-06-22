@@ -41,7 +41,7 @@ info()
 # ${1} output file
 modpost_link()
 {
-	${LD} ${LDFLAGS} -r -o ${1} ${KBUILD_VMLINUX_INIT}                   \
+	${LDFINAL} ${LDFLAGS} -r -o ${1} ${KBUILD_VMLINUX_INIT}                   \
 		--start-group ${KBUILD_VMLINUX_MAIN} --end-group
 }
 
