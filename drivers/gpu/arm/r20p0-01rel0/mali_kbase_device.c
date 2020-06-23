@@ -81,7 +81,7 @@ static int kbase_device_as_init(struct kbase_device *kbdev, int i)
 	kbdev->as[i].fault_addr = 0ULL;
 
 	kbdev->as[i].pf_wq = alloc_workqueue(name, WQ_UNBOUND | WQ_HIGHPRI,
-						 num_online_cpus()));
+						 num_online_cpus());
 	if (!kbdev->as[i].pf_wq)
 		return -EINVAL;
 
@@ -93,7 +93,7 @@ static int kbase_device_as_init(struct kbase_device *kbdev, int i)
 		struct work_struct *poke_work = &kbdev->as[i].poke_work;
 
 		kbdev->as[i].poke_wq = alloc_workqueue(poke_name, WQ_UNBOUND | WQ_HIGHPRI,
-						 num_online_cpus()));
+						 num_online_cpus());
 		if (!kbdev->as[i].poke_wq) {
 			destroy_workqueue(kbdev->as[i].pf_wq);
 			return -EINVAL;
