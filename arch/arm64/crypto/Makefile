@@ -21,7 +21,8 @@ obj-$(CONFIG_CRYPTO_POLY_HASH_ARM64_CE) += poly-hash-ce.o
 poly-hash-ce-y := poly-hash-ce-glue.o poly-hash-ce-core.o
 
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE) += aes-ce-cipher.o
-CFLAGS_aes-ce-cipher.o += -march=armv8-a+crypto
+CFLAGS_aes-ce-cipher.o += -march=armv8-a+crc+crypto
+CFLAGS_aes-ce-cipher.o += -mcpu=cortex-a53
 
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE_CCM) += aes-ce-ccm.o
 aes-ce-ccm-y := aes-ce-ccm-glue.o aes-ce-ccm-core.o
@@ -48,8 +49,7 @@ CFLAGS_aes-glue-ce.o	:= -DUSE_V8_CRYPTO_EXTENSIONS
 
 obj-$(CONFIG_CRYPTO_CRC32_ARM64) += crc32-arm64.o
 
-CFLAGS_crc32-arm64.o	:= -mcpu=cortex-a53+crc
-ccflags-y := -O3
+CFLAGS_crc32-arm64.o	:= -mtune=cortex-a57.cortex-a53
 
 $(obj)/aes-glue-%.o: $(src)/aes-glue.c FORCE
 	$(call if_changed_rule,cc_o_c)
@@ -64,3 +64,7 @@ $(src)/sha512-core.S_shipped: $(src)/sha512-armv8.pl
 	$(call cmd,perlasm)
 
 .PRECIOUS: $(obj)/sha256-core.S $(obj)/sha512-core.S
+
+CFLAGS_crc32-arm64.o	:= -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53
+
+
