@@ -613,7 +613,7 @@ config ARCH_HAS_HOLES_MEMORYMODEL
 	def_bool y if SPARSEMEM
 
 config ARCH_FLATMEM_ENABLE
-	def_bool y
+	def_bool !NUMA
 
 config ARCH_SPARSEMEM_ENABLE
 	def_bool y
