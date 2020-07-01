@@ -109,14 +109,14 @@ static inline bool cpu_have_feature(unsigned int num)
 	return elf_hwcap & (1UL << num);
 }
 
-static inline bool cpus_have_cap(unsigned int num)
+static __always_inline bool cpus_have_cap(unsigned int num)
 {
 	if (num >= ARM64_NCAPS)
 		return false;
 	return test_bit(num, cpu_hwcaps);
 }
 
-static inline void cpus_set_cap(unsigned int num)
+static __always_inline void cpus_set_cap(unsigned int num)
 {
 	if (num >= ARM64_NCAPS)
 		pr_warn("Attempt to set an illegal CPU capability (%d >= %d)\n",
