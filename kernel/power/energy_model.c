@@ -53,7 +53,7 @@ static struct em_perf_domain *em_create_pd(cpumask_t *span, int nr_states,
 		 */
 		ret = cb->active_power(&power, &freq, cpu);
 		if (ret) {
-			pr_err("pd%d: invalid cap. state: %d\n", cpu, ret);
+			pr_debug("pd%d: invalid cap. state: %d\n", cpu, ret);
 			goto free_cs_table;
 		}
 
@@ -62,7 +62,7 @@ static struct em_perf_domain *em_create_pd(cpumask_t *span, int nr_states,
 		 * higher capacity states.
 		 */
 		if (freq <= prev_freq) {
-			pr_err("pd%d: non-increasing freq: %lu\n", cpu, freq);
+			pr_debug("pd%d: non-increasing freq: %lu\n", cpu, freq);
 			goto free_cs_table;
 		}
 
@@ -71,7 +71,7 @@ static struct em_perf_domain *em_create_pd(cpumask_t *span, int nr_states,
 		 * positive, in milli-watts and to fit into 16 bits.
 		 */
 		if (!power || power > EM_CPU_MAX_POWER) {
-			pr_err("pd%d: invalid power: %lu\n", cpu, power);
+			pr_debug("pd%d: invalid power: %lu\n", cpu, power);
 			goto free_cs_table;
 		}
 
@@ -168,7 +168,7 @@ int em_register_perf_domain(cpumask_t *span, unsigned int nr_states,
 		 */
 		cap = arch_scale_cpu_capacity(NULL, cpu);
 		if (prev_cap && prev_cap != cap) {
-			pr_err("CPUs of %*pbl must have the same capacity\n",
+			pr_debug("CPUs of %*pbl must have the same capacity\n",
 							cpumask_pr_args(span));
 			ret = -EINVAL;
 			goto unlock;

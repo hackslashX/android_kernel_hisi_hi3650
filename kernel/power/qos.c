@@ -261,12 +261,12 @@ static int pm_qos_dbg_show_requests(struct seq_file *s, void *unused)
 	int active_reqs = 0;
 
 	if (IS_ERR_OR_NULL(qos)) {
-		pr_err("%s: bad qos param!\n", __func__);
+		pr_debug("%s: bad qos param!\n", __func__);
 		return -EINVAL;
 	}
 	c = qos->constraints;
 	if (IS_ERR_OR_NULL(c)) {
-		pr_err("%s: Bad constraints on qos?\n", __func__);
+		pr_debug("%s: Bad constraints on qos?\n", __func__);
 		return -EINVAL;
 	}
 
