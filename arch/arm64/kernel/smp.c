@@ -404,17 +404,17 @@ void cpu_die_early(void)
 static void __init hyp_mode_check(void)
 {
 	if (is_hyp_mode_available())
-		pr_info("CPU: All CPU(s) started at EL2\n");
+		pr_debug("CPU: All CPU(s) started at EL2\n");
 	else if (is_hyp_mode_mismatched())
 		WARN_TAINT(1, TAINT_CPU_OUT_OF_SPEC,
 			   "CPU: CPUs started in inconsistent modes");
 	else
-		pr_info("CPU: All CPU(s) started at EL1\n");
+		pr_debug("CPU: All CPU(s) started at EL1\n");
 }
 
 void __init smp_cpus_done(unsigned int max_cpus)
 {
-	pr_info("SMP: Total of %d processors activated.\n", num_online_cpus());
+	pr_debug("SMP: Total of %d processors activated.\n", num_online_cpus());
 	setup_cpu_features();
 	hyp_mode_check();
 	apply_alternatives_all();
