@@ -842,7 +842,7 @@ static int rcu_self_test_counter;
 static void test_callback(struct rcu_head *r)
 {
 	rcu_self_test_counter++;
-	pr_info("RCU test callback executed %d\n", rcu_self_test_counter);
+	pr_debug("RCU test callback executed %d\n", rcu_self_test_counter);
 }
 
 static void early_boot_test_call_rcu(void)
@@ -868,7 +868,7 @@ static void early_boot_test_call_rcu_sched(void)
 
 void rcu_early_boot_tests(void)
 {
-	pr_info("Running RCU self tests\n");
+	pr_debug("Running RCU self tests\n");
 
 	if (rcu_self_test)
 		early_boot_test_call_rcu();
