@@ -120,31 +120,31 @@ hisi_hw_vote_gpu_regs_remap(void)
 
 	np = of_find_compatible_node(NULL, NULL, "hisilicon,pmctrl");
 	if (!np) {
-		pr_err("[%s] doesn't have pmctrl node!\n", __func__);
+		pr_debug("[%s] doesn't have pmctrl node!\n", __func__);
 		return -ENODEV;
 	}
 
 	pmctrl_base = of_iomap(np, 0);
 	if (NULL == pmctrl_base) {
-		pr_err("[%s]: ioremap fail!\n", __func__);
+		pr_debug("[%s]: ioremap fail!\n", __func__);
 		return -EINVAL;
 	}
 
 	np = of_find_compatible_node(NULL, NULL, "hisi,gpu-hw-vote-freq");
 	if (!np) {
-		pr_err("[%s] doesn't have hw-vote-freq node!\n", __func__);
+		pr_debug("[%s] doesn't have hw-vote-freq node!\n", __func__);
 		return -ENODEV;
 	}
 
 	elem_num = of_property_count_elems_of_size(np, "vote_reg_info", sizeof(unsigned int));
 	if (elem_num != (sizeof(struct hw_vote_gpu_reg_info) / 4)) {
-		pr_err("[%s]vote_reg_info & struct un-match!\n", __func__);
+		pr_debug("[%s]vote_reg_info & struct un-match!\n", __func__);
 		return -ENODEV;
 	}
 
 	ret = of_property_read_u32_array(np, "vote_reg_info", (unsigned int*)(&gpu_vote_reg), sizeof(struct hw_vote_gpu_reg_info) / 4);
 	if (ret) {
-		pr_err("[%s]parse vote_reg_info fail!\n", __func__);
+		pr_debug("[%s]parse vote_reg_info fail!\n", __func__);
 		return -ENODEV;
 	}
 
@@ -161,7 +161,7 @@ hisi_hw_vote_gpu_target(unsigned long freq)
 
 
 	if (0 == gpu_vote_reg.vote_reg_offset) {
-		pr_err("%s: not remap!\n", __func__);
+		pr_debug("%s: not remap!\n", __func__);
 		return -EINVAL;
 	}
 
@@ -171,7 +171,7 @@ hisi_hw_vote_gpu_target(unsigned long freq)
 		reg   = pmctrl_base + gpu_vote_reg.vote_reg_offset;
 		shift = ffs(gpu_vote_reg.vote_bits_mask);
 		if (shift <= 0) {
-			pr_err("%s: gpu result reg mask error\n", __func__);
+			pr_debug("%s: gpu result reg mask error\n", __func__);
 			return -EINVAL;
 		}
 		shift -= 1;
@@ -192,12 +192,12 @@ hisi_hw_vote_gpu_result_get(struct device *dev)
 	unsigned int shift;
 
 	if (NULL == dev) {
-		pr_err("%s: dev is NULL!\n", __func__);
+		pr_debug("%s: dev is NULL!\n", __func__);
 		return target_freq;
 	}
 
 	if (0 == gpu_vote_reg.result_reg_offset) {
-		pr_err("%s: not remap!\n", __func__);
+		pr_debug("%s: not remap!\n", __func__);
 		return target_freq;
 	}
 
@@ -205,7 +205,7 @@ hisi_hw_vote_gpu_result_get(struct device *dev)
 		reg   = pmctrl_base + gpu_vote_reg.result_reg_offset;
 		shift = ffs(gpu_vote_reg.result_rd_mask);
 		if (shift <= 0) {
-			pr_err("%s: gpu result reg mask error\n", __func__);
+			pr_debug("%s: gpu result reg mask error\n", __func__);
 			return 0;
 		}
 		shift -= 1;
@@ -350,7 +350,7 @@ static int mali_kbase_devfreq_target(struct device *dev, unsigned long *_freq,
 	rcu_read_lock();
 	opp = devfreq_recommended_opp(dev, _freq, flags);
 	if (IS_ERR(opp)) {
-		pr_err("[mali]  Failed to get Operating Performance Point\n");
+		pr_debug("[mali]  Failed to get Operating Performance Point\n");
 		rcu_read_unlock();
 		return PTR_ERR(opp);
 	}
@@ -375,7 +375,7 @@ static int mali_kbase_devfreq_target(struct device *dev, unsigned long *_freq,
 #else
 	if (clk_set_rate((kbdev->clk), freq)) {
 #endif
-		pr_err("[mali]  Failed to set gpu freqency, [%lu->%lu]\n", old_freq, freq);
+		pr_debug("[mali]  Failed to set gpu freqency, [%lu->%lu]\n", old_freq, freq);
 		return -ENODEV;
 	}
 
@@ -392,7 +392,7 @@ static int mali_kbase_get_dev_status(struct device *dev,
 	struct kbase_device *kbdev = (struct kbase_device *)dev->platform_data;
 
 	if (kbdev->pm.backend.metrics.kbdev != kbdev) {
-		pr_err("%s pm backend metrics not initialized\n", __func__);
+		pr_debug("%s pm backend metrics not initialized\n", __func__);
 		return -EINVAL;
 	}
 
@@ -491,7 +491,7 @@ static unsigned long hisi_model_static_power(unsigned long voltage)
 		for (i = 0; i < 5; i++) {
 			ret = of_property_read_string_index(dev_node, "hisilicon,gpu_temp_scale_capacitance", i, &temperature_scale_capacitance[i]);
 			if (ret) {
-				pr_err("%s temperature_scale_capacitance [%d] read err\n",__func__,i);
+				pr_debug("%s temperature_scale_capacitance [%d] read err\n",__func__,i);
 				continue;
 			}
 
@@ -530,7 +530,7 @@ unsigned long hisi_calc_gpu_static_power(unsigned long voltage, int temperature)
 		for (i = 0; i < 5; i++) {
 			ret = of_property_read_string_index(dev_node, "hisilicon,gpu_temp_scale_capacitance", i, &temperature_scale_capacitance[i]);
 			if (ret) {
-				pr_err("%s temperature_scale_capacitance [%d] read err\n",__func__,i);
+				pr_debug("%s temperature_scale_capacitance [%d] read err\n",__func__,i);
 				continue;
 			}
 
@@ -618,7 +618,7 @@ static int kbase_platform_init(struct kbase_device *kbdev)
 #ifdef CONFIG_HISI_HW_VOTE_GPU_FREQ
 	err = hisi_hw_vote_gpu_regs_remap();
 	if (err) {
-		pr_err("%s: remap fail%d!\n", __func__, err);
+		pr_debug("%s: remap fail%d!\n", __func__, err);
 		return 0;
 	}
 #endif
@@ -771,7 +771,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 				ret = pm_schedule_suspend(dev, RUNTIME_PM_DELAY_30MS);
 			if (ret != -EAGAIN) {
 				if (unlikely(ret < 0)) {
-					pr_err("[mali]  pm_schedule_suspend failed (%d)\n\n", ret);
+					pr_debug("[mali]  pm_schedule_suspend failed (%d)\n\n", ret);
 					WARN_ON(1);
 				}
 
