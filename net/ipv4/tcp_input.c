@@ -88,7 +88,7 @@
 #include <hwnet/ipv4/wifipro_tcp_monitor.h>
 #endif
 
-int sysctl_tcp_timestamps __read_mostly = 1;
+int sysctl_tcp_timestamps __read_mostly = 0;
 int sysctl_tcp_window_scaling __read_mostly = 1;
 int sysctl_tcp_sack __read_mostly;
 int sysctl_tcp_fack __read_mostly;
