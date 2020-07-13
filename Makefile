@@ -1,6 +1,6 @@
 VERSION = 4
 PATCHLEVEL = 4
-SUBLEVEL = 229
+SUBLEVEL = 232
 EXTRAVERSION =
 NAME = Blurry Fish Butt
 
@@ -307,7 +307,9 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 # GCC Optimizations	  
 EXTRA_OPTS := \
 	-falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
-	-fno-inline-small-functions -ftree-partial-pre -fno-schedule-insns
+	-fno-inline-small-functions -fno-strict-aliasing -ftree-partial-pre -fno-schedule-insns -fdiagnostics-color=always -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize -fgraphite
+
+
 
 # Arm64 Architecture Specific GCC Flags
 # fall back to -march=armv8-a in case the compiler isn't compatible
@@ -315,7 +317,7 @@ EXTRA_OPTS := \
 ARM_ARCH_OPT := \
 	$(call cc-option,-march=armv8-a+crc+crypto,) \
 	$(call cc-option,-mtune=cortex-a57.cortex-a53,) \
-	$(call cc-option,-mcpu=cortex-a57.cortex-a53,) 
+	$(call cc-option,-mcpu=cortex-a57.cortex-a53+crc,) 
 
 HOSTCC       = ccache gcc
 HOSTCXX      = g++
@@ -374,7 +376,7 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF) -Wall
 CFLAGS_MODULE   = -fno-pic
 AFLAGS_MODULE   =
-LDFLAGS_MODULE  =--strip-debug
+LDFLAGS_MODULE  =
 CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -fno-tree-loop-im
@@ -416,19 +418,19 @@ ifneq ($(BALONG_INC),)
 LINUXINCLUDE       += $(BALONG_INC)
 endif
 
-KBUILD_CPPFLAGS := -D__KERNEL__
+KBUILD_CPPFLAGS := -D__KERNEL__ -O3 
 
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common -Wno-unused-value -fshort-wchar \
 		   -Wno-format-security \
 		   -std=gnu89 $(call cc-option,-fno-PIE) \
-		   -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53 -fdiagnostics-color=always -floop-nest-optimize -fgraphite-identity -ftree-loop-distribution -ftree-vectorize -pipe \
+		   -mcpu=cortex-a57.cortex-a53+crc -mtune=cortex-a57.cortex-a53 -march=armv8-a+crc+crypto -fdiagnostics-color=always -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize -fgraphite -pipe \
 		   -Wno-maybe-uninitialized -Wno-unused-variable -Wno-unused-function -Wno-unused-label \
 		   -Wno-array-bounds -Wno-parentheses -Wno-format
 
-KBUILD_CLFAGS += -floop-nest-optimize -fgraphite-identity -ftree-loop-distribution
+KBUILD_CLFAGS += -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize -fgraphite
 KBUILD_AFLAGS_KERNEL :=
-KBUILD_CFLAGS_KERNEL :=  -mtune=cortex-a57.cortex-a53 -mcpu=cortex-a57.cortex-a53
+KBUILD_CFLAGS_KERNEL :=  -mtune=cortex-a57.cortex-a53 -mcpu=cortex-a57.cortex-a53+crc -march=armv8-a+crc+crypto
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 KBUILD_AFLAGS_MODULE  := -DMODULE
 KBUILD_CFLAGS_MODULE  := -DMODULE
@@ -666,7 +668,7 @@ ifeq ($(cc-name),clang)
 ifneq ($(CROSS_COMPILE),)
 CLANG_TARGET	:= --target=$(notdir $(CROSS_COMPILE:%-=%))
 GCC_TOOLCHAIN_DIR := $(dir $(shell which $(CROSS_COMPILE)elfedit))
-CLANG_PREFIX	:= --prefix=$(GCC_TOOLCHAIN_DIR)
+CLANG_PREFIX	:= --prefix=$(GCC_TOOLCHAIN_DIR)$(notdir $(CROSS_COMPILE))
 GCC_TOOLCHAIN	:= $(realpath $(GCC_TOOLCHAIN_DIR)/..)
 endif
 ifneq ($(GCC_TOOLCHAIN),)
@@ -715,9 +717,9 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 ifdef CONFIG_PROFILE_ALL_BRANCHES
-KBUILD_CFLAGS	+= -O3 $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS	+= -O3 $(EXTRA_OPTS)
 else
-KBUILD_CFLAGS   += -O3 $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS   += -O3 $(EXTRA_OPTS)
 endif
 endif
 
@@ -935,8 +937,8 @@ include scripts/Makefile.extrawarn
 include scripts/Makefile.ubsan
 
 # Add Device Specific Optimization
-KBUILD_CFLAGS += -march=armv8-a+crc+crypto -mcpu=cortex-a57.cortex-a53 -O3
-KBUILD_CPPFLAGS += -march=armv8-a+crc+crypto -mcpu=cortex-a57.cortex-a53 -O3
+KBUILD_CFLAGS += -march=armv8-a+crc+crypto -mtune=cortex-a57.cortex-a53 -mcpu=cortex-a57.cortex-a53+crc -O3 
+KBUILD_CPPFLAGS += -march=armv8-a+crc+crypto -mtune=cortex-a57.cortex-a53 -mcpu=cortex-a57.cortex-a53+crc -O3 
 
 # Add any arch overrides and user supplied CPPFLAGS, AFLAGS and CFLAGS as the
 # last assignments
@@ -1076,9 +1078,12 @@ export KBUILD_ALLDIRS := $(sort $(filter-out arch/%,$(vmlinux-alldirs)) arch Doc
 
 vmlinux-deps := $(KBUILD_LDS) $(KBUILD_VMLINUX_INIT) $(KBUILD_VMLINUX_MAIN)
 
-# Final link of vmlinux
-      cmd_link-vmlinux = $(CONFIG_SHELL) $< $(LD) $(LDFLAGS) $(LDFLAGS_vmlinux)
-quiet_cmd_link-vmlinux = LINK    $@
+ARCH_POSTLINK := $(wildcard $(srctree)/arch/$(SRCARCH)/Makefile.postlink)
+
+# Final link of vmlinux with optional arch pass after final link
+    cmd_link-vmlinux =                                                 \
+	$(CONFIG_SHELL) $< $(LD) $(LDFLAGS) $(LDFLAGS_vmlinux) ;       \
+	$(if $(ARCH_POSTLINK), $(MAKE) -f $(ARCH_POSTLINK) $@, true)
 
 # Include targets which we want to
 # execute if the rest of the kernel build went well.
@@ -1381,6 +1386,7 @@ $(clean-dirs):
 
 vmlinuxclean:
 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/link-vmlinux.sh clean
+	$(Q)$(if $(ARCH_POSTLINK), $(MAKE) -f $(ARCH_POSTLINK) clean)
 
 clean: archclean vmlinuxclean
 
