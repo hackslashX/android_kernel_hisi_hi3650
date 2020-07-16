@@ -321,7 +321,7 @@ static inline void check_for_tasks(int dead_cpu)
 		if (task_cpu(p) != dead_cpu)
 			continue;
 
-		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
+		pr_debug("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
 			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
 	}
 	read_unlock(&tasklist_lock);
@@ -374,7 +374,7 @@ static int _cpu_down(unsigned int cpu, int tasks_frozen)
 	if (err) {
 		nr_calls--;
 		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
-		pr_warn("%s: attempt to take down CPU %u failed\n",
+		pr_debug("%s: attempt to take down CPU %u failed\n",
 			__func__, cpu);
 		goto out_release;
 	}
@@ -650,7 +650,7 @@ void enable_nonboot_cpus(void)
 				kobject_uevent(&cpu_device->kobj, KOBJ_ONLINE);
 			continue;
 		}
-		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
+		pr_debug("Error taking CPU%d up: %d\n", cpu, error);
 	}
 
 	arch_enable_nonboot_cpus_end();
@@ -859,7 +859,6 @@ static int __init mitigations_parse_cmdline(char *arg)
 		cpu_mitigations = CPU_MITIGATIONS_OFF;
 	else if (!strcmp(arg, "auto"))
 		cpu_mitigations = CPU_MITIGATIONS_AUTO;
-	else
 		pr_crit("Unsupported mitigations=%s, system may still be vulnerable\n",
 			arg);
 
