@@ -1,6 +1,6 @@
 VERSION = 4
 PATCHLEVEL = 4
-SUBLEVEL = 224
+SUBLEVEL = 228
 EXTRAVERSION =
 NAME = Blurry Fish Butt
 
@@ -257,7 +257,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # "make" in the configured kernel build directory always uses that.
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
-ARCH		?= arm64
+ARCH		:= arm64
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 
 # Architecture as present in compile.h
@@ -304,10 +304,23 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
+# GCC Optimizations	  
+EXTRA_OPTS := \
+	-falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
+	-fno-inline-small-functions -ftree-partial-pre -fno-schedule-insns
+
+# Arm64 Architecture Specific GCC Flags
+# fall back to -march=armv8-a in case the compiler isn't compatible
+# with -mcpu and -mtune
+ARM_ARCH_OPT := \
+	$(call cc-option,-march=armv8-a+crc+crypto,) \
+	$(call cc-option,-mtune=cortex-a57.cortex-a53,) \
+	$(call cc-option,-mcpu=cortex-a57.cortex-a53,) 
+
 HOSTCC       = ccache gcc
 HOSTCXX      = g++
-HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O3
+HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -fomit-frame-pointer -std=gnu89 -pipe $(EXTRA_OPTS)
+HOSTCXXFLAGS = -O3 $(EXTRA_OPTS)
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -316,12 +329,8 @@ KBUILD_MODULES :=
 KBUILD_BUILTIN := 1
 
 # If we have only "make modules", don't compile built-in objects.
-# When we're building modules with modversions, we need to consider
-# the built-in objects during the descend as well, in order to
-# make sure the checksums are up to date before we record them.
-
 ifeq ($(MAKECMDGOALS),modules)
-  KBUILD_BUILTIN := $(if $(CONFIG_MODVERSIONS),1)
+  KBUILD_BUILTIN :=
 endif
 
 # If we have "make <whatever> modules", compile modules
@@ -363,7 +372,7 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF) -Wall
-CFLAGS_MODULE   =
+CFLAGS_MODULE   = -fno-pic
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =--strip-debug
 CFLAGS_KERNEL	=
@@ -410,17 +419,16 @@ endif
 KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common \
-		   -Werror-implicit-function-declaration \
+		   -fno-strict-aliasing -fno-common -Wno-unused-value -fshort-wchar \
 		   -Wno-format-security \
 		   -std=gnu89 $(call cc-option,-fno-PIE) \
-		   -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53 -fdiagnostics-color=always \
+		   -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53 -fdiagnostics-color=always -floop-nest-optimize -fgraphite-identity -ftree-loop-distribution -ftree-vectorize -pipe \
 		   -Wno-maybe-uninitialized -Wno-unused-variable -Wno-unused-function -Wno-unused-label \
 		   -Wno-array-bounds -Wno-parentheses -Wno-format
 
-
+KBUILD_CLFAGS += -floop-nest-optimize -fgraphite-identity -ftree-loop-distribution
 KBUILD_AFLAGS_KERNEL :=
-KBUILD_CFLAGS_KERNEL :=
+KBUILD_CFLAGS_KERNEL :=  -mtune=cortex-a57.cortex-a53 -mcpu=cortex-a57.cortex-a53
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 KBUILD_AFLAGS_MODULE  := -DMODULE
 KBUILD_CFLAGS_MODULE  := -DMODULE
@@ -670,6 +678,21 @@ KBUILD_CFLAGS += $(call cc-option, -no-integrated-as)
 KBUILD_AFLAGS += $(call cc-option, -no-integrated-as)
 endif
 
+ifdef CONFIG_LTO
+LTO_CFLAGS    := -flto -flto=jobserver -fno-fat-lto-objects \
+                 -fuse-linker-plugin -fwhole-program
+KBUILD_CFLAGS += $(LTO_CFLAGS)
+LTO_LDFLAGS   := $(LTO_CFLAGS) -Wno-lto-type-mismatch -Wno-psabi
+LDFINAL       := $(CONFIG_SHELL) $(srctree)/scripts/gcc-ld $(LTO_LDFLAGS)
+AR            := $(CROSS_COMPILE)gcc-ar
+NM            := $(CROSS_COMPILE)gcc-nm
+DISABLE_LTO   := -fno-lto
+export DISABLE_LTO LDFINAL
+else
+LDFINAL       := $(LD)
+export LDFINAL
+endif
+
 # The arch Makefile can set ARCH_{CPP,A,C}FLAGS to override the default
 # values of the respective KBUILD_* variables
 ARCH_CPPFLAGS :=
@@ -683,18 +706,24 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-truncation)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-overflow)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, int-in-bool-context)
+KBUILD_CFLAGS	+= $(call cc-disable-warning,unused-const-variable,)
+KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
+KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
-else
 ifdef CONFIG_PROFILE_ALL_BRANCHES
 KBUILD_CFLAGS	+= -O3
 else
-KBUILD_CFLAGS   += -O3 $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS   += -O3
 endif
 endif
+
+KBUILD_CFLAGS 	+= $(call cc-disable-warning,maybe-uninitialized,) \
+		   $(call cc-disable-warning,unused-variable,) \
+		   $(call cc-disable-warning,unused-function)
 
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
@@ -768,6 +797,14 @@ KBUILD_CFLAGS += $(stackp-flag)
 
 ifeq ($(cc-name),clang)
 KBUILD_CPPFLAGS += $(call cc-option,-Qunused-arguments,)
+KBUILD_CFLAGS	+= $(call cc-option, -mllvm -polly) \
+		   $(call cc-option, -mllvm -polly-run-dce) \
+		   $(call cc-option, -mllvm -polly-run-inliner) \
+		   $(call cc-option, -mllvm -polly-opt-fusion=max) \
+		   $(call cc-option, -mllvm -polly-ast-use-context) \
+		   $(call cc-option, -mllvm -polly-detect-keep-going) \
+		   $(call cc-option, -mllvm -polly-vectorizer=stripmine) \
+		   $(call cc-option, -mllvm -polly-invariant-load-hoisting)
 KBUILD_CFLAGS += $(call cc-disable-warning, format-invalid-specifier)
 KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
@@ -866,9 +903,6 @@ KBUILD_CFLAGS	+= $(call cc-option,-fmerge-constants)
 # Make sure -fstack-check isn't enabled (like gentoo apparently did)
 KBUILD_CFLAGS  += $(call cc-option,-fno-stack-check,)
 
-# conserve stack if available
-KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
-
 # disallow errors like 'EXPORT_GPL(foo);' with missing header
 KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
 
@@ -901,8 +935,8 @@ include scripts/Makefile.extrawarn
 include scripts/Makefile.ubsan
 
 # Add Device Specific Optimization
-KBUILD_CFLAGS += -march=armv8-a+crypto -march=armv8-a+crc -mcpu=cortex-a53 -Ofast
-KBUILD_CPPFLAGS += -march=armv8-a+crypto -march=armv8-a+crc -mcpu=cortex-a53 -Ofast
+KBUILD_CFLAGS += -march=armv8-a+crc+crypto -mcpu=cortex-a57.cortex-a53 -O3
+KBUILD_CPPFLAGS += -march=armv8-a+crc+crypto -mcpu=cortex-a57.cortex-a53 -O3
 
 # Add any arch overrides and user supplied CPPFLAGS, AFLAGS and CFLAGS as the
 # last assignments
@@ -1237,6 +1271,13 @@ ifdef CONFIG_MODULES
 # By default, build modules as well
 
 all: modules
+
+# When we're building modules with modversions, we need to consider
+# the built-in objects during the descend as well, in order to
+# make sure the checksums are up to date before we record them.
+ifdef CONFIG_MODVERSIONS
+  KBUILD_BUILTIN := 1
+endif
 
 # Build modules
 #

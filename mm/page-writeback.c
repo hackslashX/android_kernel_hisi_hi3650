@@ -65,7 +65,7 @@
  * After a CPU has dirtied this many pages, balance_dirty_pages_ratelimited
  * will look to see if it needs to force writeback or throttling.
  */
-static long ratelimit_pages = 32;
+static long ratelimit_pages = 256;
 
 /* The following parameters are exported via /proc/sys/vm */
 
@@ -100,7 +100,7 @@ unsigned long vm_dirty_bytes;
 /*
  * The interval between `kupdate'-style writebacks
  */
-unsigned int dirty_writeback_interval = 5 * 100; /* centiseconds */
+unsigned int dirty_writeback_interval; /* centiseconds */
 
 EXPORT_SYMBOL_GPL(dirty_writeback_interval);
 
@@ -644,7 +644,7 @@ void wb_domain_exit(struct wb_domain *dom)
  * registered backing devices, which, for obvious reasons, can not
  * exceed 100%.
  */
-static unsigned int bdi_min_ratio;
+static unsigned int bdi_min_ratio = 5;
 
 int bdi_set_min_ratio(struct backing_dev_info *bdi, unsigned int min_ratio)
 {

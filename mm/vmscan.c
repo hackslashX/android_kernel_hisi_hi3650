@@ -3761,7 +3761,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
 			order = sc.order = 0;
 
 		/* Check if kswapd should be suspending */
-		if (try_to_freeze() || kthread_should_stop())
+		if (try_to_freeze() || kthread_should_stop() ||
+		    !atomic_read(&pgdat->kswapd_waiters))
 			break;
 
 		/*
@@ -3814,6 +3815,7 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
 	 */
 	if (prepare_kswapd_sleep(pgdat, order, remaining, classzone_idx)) {
 		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
+
 
 		/*
 		 * vmstat counters are not perfectly accurate and the estimated

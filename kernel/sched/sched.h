@@ -32,8 +32,10 @@ extern long calc_load_fold_active(struct rq *this_rq);
 
 #ifdef CONFIG_SMP
 extern void update_cpu_load_active(struct rq *this_rq);
+extern void check_for_migration(struct rq *rq, struct task_struct *p);
 #else
 static inline void update_cpu_load_active(struct rq *this_rq) { }
+static inline void check_for_migration(struct rq *rq, struct task_struct *p) { }
 #endif
 
 /*
@@ -49,11 +51,13 @@ static inline void update_cpu_load_active(struct rq *this_rq) { }
  * and does not change the user-interface for setting shares/weights.
  *
  * We increase resolution only if we have enough bits to allow this increased
- * resolution (i.e. BITS_PER_LONG > 32). The costs for increasing resolution
- * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
- * increased costs.
+ * resolution (i.e. 64bit). The costs for increasing resolution when 32bit are
+ * pretty high and the returns do not justify the increased costs.
+ *
+ * Really only required when CONFIG_FAIR_GROUP_SCHED is also set, but to
+ * increase coverage and consistency always enable it on 64bit platforms.
  */
-#if 0 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
+#ifdef CONFIG_64BIT
 # define SCHED_LOAD_RESOLUTION	10
 # define scale_load(w)		((w) << SCHED_LOAD_RESOLUTION)
 # define scale_load_down(w)	((w) >> SCHED_LOAD_RESOLUTION)
@@ -1247,6 +1251,7 @@ static const u32 prio_to_wmult[40] = {
 
 #define DEQUEUE_SLEEP		0x01
 #define DEQUEUE_SAVE		0x02
+#define DEQUEUE_IDLE		0x80 /* The last dequeue before IDLE */
 
 #define RETRY_TASK		((void *)-1UL)
 

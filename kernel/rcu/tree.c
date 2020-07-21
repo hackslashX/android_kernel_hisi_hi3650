@@ -128,6 +128,9 @@ int rcu_num_lvls __read_mostly = RCU_NUM_LVLS;
 /* Number of rcu_nodes at specified level. */
 static int num_rcu_lvl[] = NUM_RCU_LVL_INIT;
 int rcu_num_nodes __read_mostly = NUM_RCU_NODES; /* Total # rcu_nodes in use. */
+/* panic() on RCU Stall sysctl. */
+int sysctl_panic_on_rcu_stall __read_mostly = CONFIG_RCU_PANIC_ON_STALL;
+
 
 /*
  * The rcu_scheduler_active variable transitions from zero to one just
@@ -246,7 +249,6 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
  */
 void rcu_sched_qs(void)
 {
-	unsigned long flags;
 
 	if (__this_cpu_read(rcu_sched_data.cpu_no_qs.s)) {
 		trace_rcu_grace_period(TPS("rcu_sched"),
@@ -255,14 +257,9 @@ void rcu_sched_qs(void)
 		__this_cpu_write(rcu_sched_data.cpu_no_qs.b.norm, false);
 		if (!__this_cpu_read(rcu_sched_data.cpu_no_qs.b.exp))
 			return;
-		local_irq_save(flags);
-		if (__this_cpu_read(rcu_sched_data.cpu_no_qs.b.exp)) {
-			__this_cpu_write(rcu_sched_data.cpu_no_qs.b.exp, false);
-			rcu_report_exp_rdp(&rcu_sched_state,
-					   this_cpu_ptr(&rcu_sched_data),
-					   true);
-		}
-		local_irq_restore(flags);
+		__this_cpu_write(rcu_sched_data.cpu_no_qs.b.exp, false);
+	rcu_report_exp_rdp(&rcu_sched_state,
+			   this_cpu_ptr(&rcu_sched_data), true);
 	}
 }
 
@@ -300,16 +297,16 @@ EXPORT_PER_CPU_SYMBOL_GPL(rcu_qs_ctr);
  * We inform the RCU core by emulating a zero-duration dyntick-idle
  * period, which we in turn do by incrementing the ->dynticks counter
  * by two.
+ *
+ * The caller must have disabled interrupts.
  */
 static void rcu_momentary_dyntick_idle(void)
 {
-	unsigned long flags;
 	struct rcu_data *rdp;
 	struct rcu_dynticks *rdtp;
 	int resched_mask;
 	struct rcu_state *rsp;
 
-	local_irq_save(flags);
 
 	/*
 	 * Yes, we can lose flag-setting operations.  This is OK, because
@@ -340,13 +337,12 @@ static void rcu_momentary_dyntick_idle(void)
 		smp_mb__after_atomic(); /* Later stuff after QS. */
 		break;
 	}
-	local_irq_restore(flags);
 }
 
 /*
  * Note a context switch.  This is a quiescent state for RCU-sched,
  * and requires special handling for preemptible RCU.
- * The caller must have disabled preemption.
+ * The caller must have disabled interrupts.
  */
 void rcu_note_context_switch(void)
 {
@@ -376,9 +372,14 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
  */
 void rcu_all_qs(void)
 {
+	unsigned long flags;
+
 	barrier(); /* Avoid RCU read-side critical sections leaking down. */
-	if (unlikely(raw_cpu_read(rcu_sched_qs_mask)))
+	if (unlikely(raw_cpu_read(rcu_sched_qs_mask))) {
+		local_irq_save(flags);
 		rcu_momentary_dyntick_idle();
+		local_irq_restore(flags);
+	}
 	this_cpu_inc(rcu_qs_ctr);
 	barrier(); /* Avoid RCU read-side critical sections leaking up. */
 }
@@ -575,7 +576,7 @@ static int
 cpu_has_callbacks_ready_to_invoke(struct rcu_data *rdp)
 {
 	return &rdp->nxtlist != rdp->nxttail[RCU_DONE_TAIL] &&
-	       rdp->nxttail[RCU_DONE_TAIL] != NULL;
+	       rdp->nxttail[RCU_NEXT_TAIL] != NULL;
 }
 
 /*

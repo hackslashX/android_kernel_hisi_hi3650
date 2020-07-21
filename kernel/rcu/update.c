@@ -113,8 +113,7 @@ EXPORT_SYMBOL(rcu_read_lock_sched_held);
 
 #ifndef CONFIG_TINY_RCU
 
-static atomic_t rcu_expedited_nesting =
-	ATOMIC_INIT(IS_ENABLED(CONFIG_RCU_EXPEDITE_BOOT) ? 1 : 0);
+static atomic_t rcu_expedited_nesting = ATOMIC_INIT(1);
 
 /*
  * Should normal grace-period primitives be expedited?  Intended for
@@ -164,8 +163,7 @@ EXPORT_SYMBOL_GPL(rcu_unexpedite_gp);
  */
 void rcu_end_inkernel_boot(void)
 {
-	if (IS_ENABLED(CONFIG_RCU_EXPEDITE_BOOT))
-		rcu_unexpedite_gp();
+	rcu_unexpedite_gp();
 }
 
 #ifdef CONFIG_PREEMPT_RCU
@@ -732,7 +730,6 @@ static int __noreturn rcu_tasks_kthread(void *arg)
 		 * holdouts.  When the list is empty, we are done.
 		 */
 		lastreport = jiffies;
-		while (!list_empty(&rcu_tasks_holdouts)) {
 
                 /* Start off with HZ/10 wait and slowly back off to 1 HZ wait*/
 		fract = 10;
@@ -751,7 +748,6 @@ static int __noreturn rcu_tasks_kthread(void *arg)
 
 			if (fract > 1)
 				fract--;
-
 
 
 			rtst = READ_ONCE(rcu_task_stall_timeout);

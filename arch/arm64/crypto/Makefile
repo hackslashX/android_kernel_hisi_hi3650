@@ -21,7 +21,8 @@ obj-$(CONFIG_CRYPTO_POLY_HASH_ARM64_CE) += poly-hash-ce.o
 poly-hash-ce-y := poly-hash-ce-glue.o poly-hash-ce-core.o
 
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE) += aes-ce-cipher.o
-CFLAGS_aes-ce-cipher.o += -march=armv8-a+crypto
+CFLAGS_aes-ce-cipher.o += -march=armv8-a+crc+crypto
+CFLAGS_aes-ce-cipher.o += -mcpu=cortex-a53
 
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE_CCM) += aes-ce-ccm.o
 aes-ce-ccm-y := aes-ce-ccm-glue.o aes-ce-ccm-core.o
@@ -32,6 +33,15 @@ aes-ce-blk-y := aes-glue-ce.o aes-ce.o
 obj-$(CONFIG_CRYPTO_AES_ARM64_NEON_BLK) += aes-neon-blk.o
 aes-neon-blk-y := aes-glue-neon.o aes-neon.o
 
+obj-$(CONFIG_CRYPTO_SHA256_ARM64) += sha256-arm64.o
+sha256-arm64-y := sha256-glue.o sha256-core.o
+
+obj-$(CONFIG_CRYPTO_SHA512_ARM64) += sha512-arm64.o
+sha512-arm64-y := sha512-glue.o sha512-core.o
+
+obj-$(CONFIG_CRYPTO_AES_ARM64) += aes-arm64.o
+aes-arm64-y := aes-cipher-core.o aes-cipher-glue.o
+
 AFLAGS_aes-ce.o		:= -DINTERLEAVE=4
 AFLAGS_aes-neon.o	:= -DINTERLEAVE=4
 
@@ -39,8 +49,22 @@ CFLAGS_aes-glue-ce.o	:= -DUSE_V8_CRYPTO_EXTENSIONS
 
 obj-$(CONFIG_CRYPTO_CRC32_ARM64) += crc32-arm64.o
 
-CFLAGS_crc32-arm64.o	:= -mcpu=cortex-a53+crc
-ccflags-y := -O3
+CFLAGS_crc32-arm64.o	:= -mtune=cortex-a57.cortex-a53
 
 $(obj)/aes-glue-%.o: $(src)/aes-glue.c FORCE
 	$(call if_changed_rule,cc_o_c)
+
+quiet_cmd_perlasm = PERLASM $@
+      cmd_perlasm = $(PERL) $(<) void $(@)
+
+$(src)/sha256-core.S_shipped: $(src)/sha512-armv8.pl
+	$(call cmd,perlasm)
+
+$(src)/sha512-core.S_shipped: $(src)/sha512-armv8.pl
+	$(call cmd,perlasm)
+
+.PRECIOUS: $(obj)/sha256-core.S $(obj)/sha512-core.S
+
+CFLAGS_crc32-arm64.o	:= -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53
+
+

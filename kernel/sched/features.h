@@ -3,7 +3,7 @@
  * them to run sooner, but does not allow tons of sleepers to
  * rip the spread apart.
  */
-SCHED_FEAT(GENTLE_FAIR_SLEEPERS, true)
+SCHED_FEAT(GENTLE_FAIR_SLEEPERS, false)
 
 /*
  * Place new tasks ahead so that they do not starve already running
@@ -36,6 +36,12 @@ SCHED_FEAT(CACHE_HOT_BUDDY, true)
  */
 SCHED_FEAT(WAKEUP_PREEMPTION, true)
 
+/*
+ * Use arch dependent cpu power functions
+ */
+SCHED_FEAT(ARCH_POWER, true)
+SCHED_FEAT(ARCH_CAPACITY, true)
+
 SCHED_FEAT(HRTICK, false)
 SCHED_FEAT(DOUBLE_TICK, false)
 SCHED_FEAT(LB_BIAS, true)
@@ -49,7 +55,7 @@ SCHED_FEAT(NONTASK_CAPACITY, true)
  * Queue remote wakeups on the target CPU and process them
  * using the scheduler IPI. Reduces rq->lock contention/bounces.
  */
-SCHED_FEAT(TTWU_QUEUE, true)
+SCHED_FEAT(TTWU_QUEUE, false)
 
 #ifdef HAVE_RT_PUSH_IPI
 /*
@@ -65,7 +71,7 @@ SCHED_FEAT(RT_PUSH_IPI, true)
 #endif
 
 SCHED_FEAT(FORCE_SD_OVERLAP, false)
-SCHED_FEAT(RT_RUNTIME_SHARE, true)
+SCHED_FEAT(RT_RUNTIME_SHARE, false)
 SCHED_FEAT(LB_MIN, false)
 SCHED_FEAT(ATTACH_AGE_LOAD, true)
 

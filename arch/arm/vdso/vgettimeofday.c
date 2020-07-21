@@ -43,6 +43,8 @@ repeat:
 	return seq;
 }
 
+DEFINE_FALLBACK(clock_getres, clockid_t, clock, struct timespec *, ts)
+
 static notrace u32 vdso_read_begin(const struct vdso_data *vdata)
 {
 	u32 seq;
@@ -178,6 +180,28 @@ static notrace int do_monotonic(struct timespec *ts, struct vdso_data *vdata)
 	ts->tv_sec += tomono.tv_sec;
 	ts->tv_nsec = 0;
 	timespec_add_ns(ts, nsecs + tomono.tv_nsec);
+
+	return 0;
+}
+
+int __vdso_clock_getres(clockid_t clock, struct timespec *res)
+{
+	long nsec;
+
+	if (clock == CLOCK_REALTIME ||
+	    clock == CLOCK_MONOTONIC ||
+	    clock == CLOCK_MONOTONIC_RAW)
+		nsec = MONOTONIC_RES_NSEC;
+	else if (clock == CLOCK_REALTIME_COARSE ||
+		 clock == CLOCK_MONOTONIC_COARSE)
+		nsec = LOW_RES_NSEC;
+	else
+		return clock_getres_fallback(clock, res);
+
+	if (likely(res != NULL)) {
+		res->tv_sec = 0;
+		res->tv_nsec = nsec;
+	}
 
 	return 0;
 }

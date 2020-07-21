@@ -56,8 +56,8 @@
  * (to see the precise effective timeslice length of your workload,
  *  run vmstat and monitor the context-switches (cs) field)
  */
-unsigned int sysctl_sched_latency = 6000000ULL;
-unsigned int normalized_sysctl_sched_latency = 6000000ULL;
+unsigned int sysctl_sched_latency = 5000000ULL;
+unsigned int normalized_sysctl_sched_latency = 5000000ULL;
 
 unsigned int sysctl_sched_is_big_little = 1;
 unsigned int sysctl_sched_sync_hint_enable = 1;
@@ -2403,7 +2403,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
 	/*
 	 * We don't care about NUMA placement if we don't have memory.
 	 */
-	if (!curr->mm || (curr->flags & PF_EXITING) || work->next != work)
+	if ((curr->flags & (PF_EXITING | PF_KTHREAD)) || work->next != work)
 		return;
 
 	/*
@@ -3112,6 +3112,7 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq, bool update_freq)
  */
 #define UPDATE_TG	0x1
 #define SKIP_AGE_LOAD	0x2
+#define SKIP_CPUFREQ	0x4
 
 /* Update task and its cfs_rq load average */
 static inline void update_load_avg(struct sched_entity *se, int flags)
@@ -3131,7 +3132,7 @@ static inline void update_load_avg(struct sched_entity *se, int flags)
 			  cfs_rq->curr == se, NULL);
 	}
 
-	decayed  = update_cfs_rq_load_avg(now, cfs_rq, true);
+	decayed  = update_cfs_rq_load_avg(now, cfs_rq, !(flags & SKIP_CPUFREQ));
 	decayed |= propagate_entity_load_avg(se);
 
 	if (decayed && (flags & UPDATE_TG))
@@ -3303,6 +3304,7 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq, bool update_freq)
 
 #define UPDATE_TG	0x0
 #define SKIP_AGE_LOAD	0x0
+#define SKIP_CPUFREQ	0x3
 
 static inline void update_load_avg(struct sched_entity *se, int not_used1){}
 static inline void
@@ -3399,6 +3401,20 @@ static void check_spread(struct cfs_rq *cfs_rq, struct sched_entity *se)
 #endif
 }
 
+
+static unsigned int Lgentle_fair_sleepers = 0;
+static unsigned int Larch_power = 1;
+
+void relay_gfs(unsigned int gfs)
+{
+	Lgentle_fair_sleepers = gfs;
+}
+
+void relay_ap(unsigned int ap)
+{
+	Larch_power = ap;
+}
+
 static void
 place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
 {
@@ -3421,7 +3437,7 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
 		 * Halve their sleep time's effect, to allow
 		 * for a gentler effect of sleepers:
 		 */
-		if (sched_feat(GENTLE_FAIR_SLEEPERS))
+		if (Lgentle_fair_sleepers)
 			thresh >>= 1;
 
 		vruntime -= thresh;
@@ -3437,6 +3453,8 @@ static void
 enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 {
 	/*
+ 	 * If we're the current task, we must renormalise before calling
+  	 * update_curr().
 	 * Update the normalized vruntime before updating min_vruntime
 	 * through calling update_curr().
 	 */
@@ -3519,6 +3537,8 @@ static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq);
 static void
 dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 {
+      int update_flags;
+
 	/*
 	 * Update run-time statistics of the 'current'.
 	 */
@@ -3532,7 +3552,12 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	 *   - For group entity, update its weight to reflect the new share
 	 *     of its group cfs_rq.
 	 */
-	update_load_avg(se, UPDATE_TG);
+	update_flags = UPDATE_TG;
+
+	if (flags & DEQUEUE_IDLE)
+		update_flags |= SKIP_CPUFREQ;
+
+	update_load_avg(se, update_flags);
 	dequeue_entity_load_avg(cfs_rq, se);
 
 	update_stats_dequeue(cfs_rq, se);
@@ -4817,6 +4842,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	struct sched_entity *se = &p->se;
 	int task_sleep = flags & DEQUEUE_SLEEP;
 
+	if (task_sleep && rq->nr_running == 1)
+		flags |= DEQUEUE_IDLE;
+
 	for_each_sched_entity(se) {
 		cfs_rq = cfs_rq_of(se);
 		dequeue_entity(cfs_rq, se, flags);
@@ -4858,7 +4886,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		if (cfs_rq_throttled(cfs_rq))
 			break;
 
-		update_load_avg(se, UPDATE_TG);
+		update_load_avg(se, UPDATE_TG | (flags & DEQUEUE_IDLE));
 		update_cfs_shares(se);
 	}
 
@@ -6843,6 +6871,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int new_cpu = prev_cpu;
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
+        int _wake_cap = wake_cap(p, cpu, prev_cpu);
 
 	if (p->nr_cpus_allowed == 1)
 		return prev_cpu;
@@ -6853,7 +6882,6 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		 * utilization to be synced, and we need that for energy
 		 * aware wakeups
 		 */
-		int _wake_cap = wake_cap(p, cpu, prev_cpu);
 		want_affine = (!wake_wide(p) && !_wake_cap &&
 			      cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) ||
 			      (energy_aware() && need_want_affine(p, cpu));
