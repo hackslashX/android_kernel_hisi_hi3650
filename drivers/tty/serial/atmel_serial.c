@@ -812,12 +812,6 @@ static void atmel_complete_tx_dma(void *arg)
 	 */
 	if (!uart_circ_empty(xmit))
 		tasklet_schedule(&atmel_port->tasklet);
-<<<<<<< HEAD
-	else if ((port->rs485.flags & SER_RS485_ENABLED) &&
-		 !(port->rs485.flags & SER_RS485_RX_DURING_TX)) {
-		/* DMA done, stop TX, start RX for RS485 */
-		atmel_start_rx(port);
-=======
 	else if (atmel_uart_is_half_duplex(port)) {
 		/*
 		 * DMA done, re-enable TXEMPTY and signal that we can stop
@@ -826,7 +820,6 @@ static void atmel_complete_tx_dma(void *arg)
 		atmel_port->hd_start_rx = true;
 		atmel_uart_writel(port, ATMEL_US_IER,
 				  atmel_port->tx_done_mask);
->>>>>>> 839dbaf... tty/serial: atmel: RS485 HD w/DMA: enable RX after TX is stopped
 	}
 
 	spin_unlock_irqrestore(&port->lock, flags);
