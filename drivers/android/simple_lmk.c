@@ -222,15 +222,6 @@ static void scan_and_kill(unsigned long pages_needed)
 			set_tsk_thread_flag(t, TIF_MEMDIE);
 		rcu_read_unlock();
 
-		/* Grab a reference to the victim for later before unlocking */
-		get_task_struct(vtsk);
-		task_unlock(vtsk);
-	}
-
-	/* Try to speed up the death process now that we can schedule again */
-	for (i = 0; i < nr_to_kill; i++) {
-		struct task_struct *vtsk = victims[i].tsk;
-
 		/* Elevate the victim to SCHED_RR with zero RT priority */
 		sched_setscheduler_nocheck(vtsk, SCHED_RR, &sched_zero_prio);
 
@@ -265,13 +256,6 @@ static int simple_lmk_reclaim_thread(void *data)
 	}
 
 	return 0;
-}
-
-void simple_lmk_decide_reclaim(int kswapd_priority)
-{
-	if (kswapd_priority == CONFIG_ANDROID_SIMPLE_LMK_AGGRESSION &&
-	    !atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
-		wake_up(&oom_waitq);
 }
 
 void simple_lmk_mm_freed(struct mm_struct *mm)
@@ -328,3 +312,4 @@ static const struct kernel_param_ops simple_lmk_init_ops = {
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "lowmemorykiller."
 module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
+
