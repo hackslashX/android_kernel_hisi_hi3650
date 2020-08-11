@@ -305,9 +305,14 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else echo sh; fi ; fi)
 
 # GCC Optimizations	  
-EXTRA_OPTS := \
+EXTRA_OPTS := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+		   -fno-strict-aliasing -fno-common -Wno-unused-value -fshort-wchar \
+		   -Wno-format-security \
+		   -Wno-maybe-uninitialized -Wno-unused-variable -Wno-unused-function -Wno-unused-label \
+		   -Wno-array-bounds -Wno-parentheses -Wno-format
+\
 	-falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
-	-fno-inline-small-functions -fno-strict-aliasing -ftree-partial-pre -fno-schedule-insns -fdiagnostics-color=always -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize -fgraphite
+	-fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize -fgraphite 
 
 
 
@@ -376,7 +381,7 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF) -Wall
 CFLAGS_MODULE   = -fno-pic
 AFLAGS_MODULE   =
-LDFLAGS_MODULE  =
+LDFLAGS_MODULE  = --strip-debug
 CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -fno-tree-loop-im
@@ -424,7 +429,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common -Wno-unused-value -fshort-wchar \
 		   -Wno-format-security \
 		   -std=gnu89 $(call cc-option,-fno-PIE) \
-		   -mcpu=cortex-a57.cortex-a53+crc -mtune=cortex-a57.cortex-a53 -march=armv8-a+crc+crypto -fdiagnostics-color=always -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize -fgraphite -pipe \
+	           -falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
+		   -mcpu=cortex-a57.cortex-a53+crc -mtune=cortex-a57.cortex-a53 -march=armv8-a+crc+crypto -fdiagnostics-color=always -pipe -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten -floop-nest-optimize -fgraphite \
 		   -Wno-maybe-uninitialized -Wno-unused-variable -Wno-unused-function -Wno-unused-label \
 		   -Wno-array-bounds -Wno-parentheses -Wno-format
 
