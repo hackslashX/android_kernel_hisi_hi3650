@@ -1,0 +1,21 @@
+dist: bionic
+sudo: required
+language:
+	- cpp
+compiler:
+	- gcc
+addons:
+	apt:
+		sources:
+			- ubuntu-toolchain-r-test
+		packages:
+			- gcc
+			- build-essential
+script:
+	- git clone git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+	- mkdir out
+	- export CROSS_COMPILE = ./aarch64-linux-android-4.9/bin/aarch64-linux-android-
+	- export ARCH=arm64
+	- export KBUILD_BUILD_USER="travis_auto"
+	- make O=out merge_hi3650_defconfig
+	- make O=out -j$(nproc --all)
