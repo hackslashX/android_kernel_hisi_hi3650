@@ -20,9 +20,10 @@ ghash-ce-y := ghash-ce-glue.o ghash-ce-core.o
 obj-$(CONFIG_CRYPTO_POLY_HASH_ARM64_CE) += poly-hash-ce.o
 poly-hash-ce-y := poly-hash-ce-glue.o poly-hash-ce-core.o
 
+obj-$(CONFIG_CRYPTO_CRCT10DIF_ARM64_CE) += crct10dif-ce.o
+crct10dif-ce-y := crct10dif-ce-core.o crct10dif-ce-glue.o
+
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE) += aes-ce-cipher.o
-CFLAGS_aes-ce-cipher.o += -march=armv8-a+crc+crypto
-CFLAGS_aes-ce-cipher.o += -mcpu=cortex-a53
 
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE_CCM) += aes-ce-ccm.o
 aes-ce-ccm-y := aes-ce-ccm-glue.o aes-ce-ccm-core.o
@@ -41,6 +42,9 @@ sha512-arm64-y := sha512-glue.o sha512-core.o
 
 obj-$(CONFIG_CRYPTO_AES_ARM64) += aes-arm64.o
 aes-arm64-y := aes-cipher-core.o aes-cipher-glue.o
+
+obj-$(CONFIG_CRYPTO_CHACHA20_NEON) += chacha20-neon.o
+chacha20-neon-y := chacha20-neon-core.o chacha20-neon-glue.o
 
 AFLAGS_aes-ce.o		:= -DINTERLEAVE=4
 AFLAGS_aes-neon.o	:= -DINTERLEAVE=4
@@ -64,7 +68,5 @@ $(src)/sha512-core.S_shipped: $(src)/sha512-armv8.pl
 	$(call cmd,perlasm)
 
 .PRECIOUS: $(obj)/sha256-core.S $(obj)/sha512-core.S
-
-CFLAGS_crc32-arm64.o	:= -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53
 
 

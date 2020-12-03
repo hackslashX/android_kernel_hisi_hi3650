@@ -324,6 +324,7 @@ inline void __blk_run_queue_uncond(struct request_queue *q)
 	 * can wait until all these request_fn calls have finished.
 	 */
 	q->request_fn_active++;
+          preempt_disable();
 	if (!q->notified_urgent &&
 		q->elevator->type->ops.elevator_is_urgent_fn &&
 		q->urgent_request_fn &&
@@ -332,6 +333,7 @@ inline void __blk_run_queue_uncond(struct request_queue *q)
 		q->urgent_request_fn(q);
 	} else
 		q->request_fn(q);
+          preempt_enable();
 	q->request_fn_active--;
 }
 /*lint -restore*/

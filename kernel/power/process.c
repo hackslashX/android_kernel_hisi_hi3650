@@ -95,18 +95,18 @@ static int try_to_freeze_tasks(bool user_only)
 
 	if (wakeup) {
 		pr_cont("\n");
-		pr_err("Freezing of tasks aborted after %d.%03d seconds",
+		pr_debug("Freezing of tasks aborted after %d.%03d seconds",
 		       elapsed_msecs / 1000, elapsed_msecs % 1000);
 	} else if (todo) {
 		pr_cont("\n");
 #ifdef CONFIG_HW_PTM
-		pr_err("Freezing of tasks %s after %d.%03d seconds"
+		pr_debug("Freezing of tasks %s after %d.%03d seconds"
 		       " (%d tasks refusing to freeze, wq_busy=%d):\n",
 				wakeup ? "aborted" : "failed",
 				elapsed_msecs / 1000, elapsed_msecs % 1000,
 				todo - wq_busy, wq_busy);
 #else
-		pr_err("Freezing of tasks failed after %d.%03d seconds"
+		pr_debug("Freezing of tasks failed after %d.%03d seconds"
 		       " (%d tasks refusing to freeze, wq_busy=%d):\n",
 		       elapsed_msecs / 1000, elapsed_msecs % 1000,
 		       todo - wq_busy, wq_busy);
@@ -166,6 +166,21 @@ int freeze_processes(void)
 	 */
 	if (!error && !oom_killer_disable())
 		error = -EBUSY;
+
+
+	/*
+	 * There is a hard to fix race between oom_reaper kernel thread
+	 * and oom_killer_disable. oom_reaper calls exit_oom_victim
+	 * before the victim reaches exit_mm so try to freeze all the tasks
+	 * again and catch such a left over task.
+	 */
+	if (!error) {
+		pr_info("Double checking all user space processes after OOM killer disable... ");
+		error = try_to_freeze_tasks(true);
+		pr_cont("\n");
+	}
+
+
 
 	if (error)
 		thaw_processes();

@@ -354,7 +354,7 @@ static void kbase_sync_signal_pt(struct sync_pt *pt, int result)
 			 * a malicious user being able to spam dmesg.
 			 */
 #ifdef CONFIG_MALI_DEBUG
-			pr_err("Fences were triggered in a different order to allocation!");
+			pr_debug("Fences were triggered in a different order to allocation!");
 #endif				/* CONFIG_MALI_DEBUG */
 			return;
 		}

@@ -2434,11 +2434,11 @@ static int __init panel_init_module(void)
 	}
 
 	if (pprt)
-		pr_info("driver version " PANEL_VERSION
+		pr_debug("driver version " PANEL_VERSION
 			" registered on parport%d (io=0x%lx).\n", parport,
 			pprt->port->base);
 	else
-		pr_info("driver version " PANEL_VERSION
+		pr_debug("driver version " PANEL_VERSION
 			" not yet registered\n");
 	return 0;
 }

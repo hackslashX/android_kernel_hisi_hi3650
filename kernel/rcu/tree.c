@@ -504,7 +504,7 @@ void show_rcu_gp_kthreads(void)
 	struct rcu_state *rsp;
 
 	for_each_rcu_flavor(rsp) {
-		pr_info("%s: wait state: %d ->state: %#lx\n",
+		pr_debug("%s: wait state: %d ->state: %#lx\n",
 			rsp->name, rsp->gp_state, rsp->gp_kthread->state);
 		/* sched_show_task(rsp->gp_kthread); */
 	}
@@ -4518,7 +4518,7 @@ static void __init rcu_init_geometry(void)
 	if (rcu_fanout_leaf == RCU_FANOUT_LEAF &&
 	    nr_cpu_ids == NR_CPUS)
 		return;
-	pr_info("RCU: Adjusting geometry for rcu_fanout_leaf=%d, nr_cpu_ids=%d\n",
+	pr_debug("RCU: Adjusting geometry for rcu_fanout_leaf=%d, nr_cpu_ids=%d\n",
 		rcu_fanout_leaf, nr_cpu_ids);
 
 	/*
@@ -4578,12 +4578,12 @@ static void __init rcu_dump_rcu_node_tree(struct rcu_state *rsp)
 	int level = 0;
 	struct rcu_node *rnp;
 
-	pr_info("rcu_node tree layout dump\n");
-	pr_info(" ");
+	pr_debug("rcu_node tree layout dump\n");
+	pr_debug(" ");
 	rcu_for_each_node_breadth_first(rsp, rnp) {
 		if (rnp->level != level) {
 			pr_cont("\n");
-			pr_info(" ");
+			pr_debug(" ");
 			level = rnp->level;
 		}
 		pr_cont("%d:%d ^%d  ", rnp->grplo, rnp->grphi, rnp->grpnum);

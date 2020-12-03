@@ -2541,6 +2541,7 @@ struct amba_device *pdev = container_of(dev,struct amba_device,dev);
 	uap->port.fifosize = uap->fifosize;
 	uap->port.flags = UPF_BOOT_AUTOCONF;
 	uap->port.line = index;
+	spin_lock_init(&uap->port.lock);
 
 	amba_ports[index] = uap;
 

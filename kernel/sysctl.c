@@ -148,6 +148,7 @@ static int one_hundred = 100;
 #ifdef CONFIG_HISI_DIRECT_SWAPPINESS
 static int two_hundred = 200;
 #endif
+static int max_swappiness = 200;
 #ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
 #endif
@@ -567,7 +568,7 @@ static struct ctl_table kern_table[] = {
 	},
 	{
 		.procname	= "sched_rr_timeslice_ms",
-		.data		= &sched_rr_timeslice,
+		.data		= &sysctl_sched_rr_timeslice,
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
 		.proc_handler	= sched_rr_handler,
@@ -1502,7 +1503,7 @@ static struct ctl_table vm_table[] = {
 #ifdef CONFIG_HISI_DIRECT_SWAPPINESS
 		.extra2		= &two_hundred,
 #else
-		.extra2		= &one_hundred,
+		.extra2		= &max_swappiness,
 #endif
 	},
 #ifdef CONFIG_HISI_DIRECT_SWAPPINESS

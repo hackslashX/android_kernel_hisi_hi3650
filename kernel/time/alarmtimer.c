@@ -239,7 +239,7 @@ static int alarmtimer_suspend(struct device *dev)
 	int ret;
 
 	if (hw_alarm_stop && runmode_is_factory()){
-		pr_err("runmode_is_factory 1, forbid alarms\n");
+		pr_debug("runmode_is_factory 1, forbid alarms\n");
 		return 0;
 	}
 

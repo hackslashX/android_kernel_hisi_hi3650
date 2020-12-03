@@ -88,14 +88,14 @@
 #include <hwnet/ipv4/wifipro_tcp_monitor.h>
 #endif
 
-int sysctl_tcp_timestamps __read_mostly = 1;
+int sysctl_tcp_timestamps __read_mostly = 0;
 int sysctl_tcp_window_scaling __read_mostly = 1;
-int sysctl_tcp_sack __read_mostly = 1;
-int sysctl_tcp_fack __read_mostly = 1;
+int sysctl_tcp_sack __read_mostly;
+int sysctl_tcp_fack __read_mostly;
 int sysctl_tcp_reordering __read_mostly = TCP_FASTRETRANS_THRESH;
 int sysctl_tcp_max_reordering __read_mostly = 300;
 EXPORT_SYMBOL(sysctl_tcp_reordering);
-int sysctl_tcp_dsack __read_mostly = 1;
+int sysctl_tcp_dsack __read_mostly;
 int sysctl_tcp_app_win __read_mostly = 31;
 int sysctl_tcp_adv_win_scale __read_mostly = 1;
 EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
@@ -5007,7 +5007,11 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
 	if (tcp_ooo_try_coalesce(sk, tp->ooo_last_skb,
 				 skb, &fragstolen)) {
 coalesce_done:
-		tcp_grow_window(sk, skb);
+		/* For non sack flows, do not grow window to force DUPACK
+		 * and trigger fast retransmit.
+		 */
+		if (tcp_is_sack(tp))
+			tcp_grow_window(sk, skb);
 		kfree_skb_partial(skb, fragstolen);
 		skb = NULL;
 		goto add_sack;
@@ -5087,7 +5091,11 @@ add_sack:
 		tcp_sack_new_ofo_skb(sk, seq, end_seq);
 end:
 	if (skb) {
-		tcp_grow_window(sk, skb);
+		/* For non sack flows, do not grow window to force DUPACK
+		 * and trigger fast retransmit.
+		 */
+		if (tcp_is_sack(tp))
+			tcp_grow_window(sk, skb);
 		skb_set_owner_r(skb, sk);
 	}
 }

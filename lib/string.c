@@ -26,6 +26,7 @@
 #include <linux/export.h>
 #include <linux/bug.h>
 #include <linux/errno.h>
+#include <linux/memcopy.h>
 
 #include <asm/byteorder.h>
 #include <asm/word-at-a-time.h>
@@ -650,27 +651,6 @@ void *memset(void *s, int c, size_t count)
 EXPORT_SYMBOL(memset);
 #endif
 
-/**
- * memzero_explicit - Fill a region of memory (e.g. sensitive
- *		      keying data) with 0s.
- * @s: Pointer to the start of the area.
- * @count: The size of the area.
- *
- * Note: usually using memset() is just fine (!), but in cases
- * where clearing out _local_ data at the end of a scope is
- * necessary, memzero_explicit() should be used instead in
- * order to prevent the compiler from optimising away zeroing.
- *
- * memzero_explicit() doesn't need an arch-specific version as
- * it just invokes the one of memset() implicitly.
- */
-void memzero_explicit(void *s, size_t count)
-{
-	memset(s, 0, count);
-	barrier_data(s);
-}
-EXPORT_SYMBOL(memzero_explicit);
-
 #ifndef __HAVE_ARCH_MEMSET16
 /**
  * memset16() - Fill a memory area with a uint16_t
@@ -749,11 +729,11 @@ EXPORT_SYMBOL(memset64);
  */
 void *memcpy(void *dest, const void *src, size_t count)
 {
-	char *tmp = dest;
-	const char *s = src;
+	unsigned long dstp = (unsigned long)dest; 
+	unsigned long srcp = (unsigned long)src; 
 
-	while (count--)
-		*tmp++ = *s++;
+	/* Copy from the beginning to the end */ 
+	mem_copy_fwd(dstp, srcp, count); 
 	return dest;
 }
 EXPORT_SYMBOL(memcpy);
@@ -770,21 +750,15 @@ EXPORT_SYMBOL(memcpy);
  */
 void *memmove(void *dest, const void *src, size_t count)
 {
-	char *tmp;
-	const char *s;
+	unsigned long dstp = (unsigned long)dest; 
+	unsigned long srcp = (unsigned long)src; 
 
-	if (dest <= src) {
-		tmp = dest;
-		s = src;
-		while (count--)
-			*tmp++ = *s++;
+	if (dest - src >= count) { 
+		/* Copy from the beginning to the end */ 
+		mem_copy_fwd(dstp, srcp, count); 
 	} else {
-		tmp = dest;
-		tmp += count;
-		s = src;
-		s += count;
-		while (count--)
-			*--tmp = *--s;
+		/* Copy from the end to the beginning */ 
+		mem_copy_bwd(dstp, srcp, count); 
 	}
 	return dest;
 }

@@ -74,7 +74,7 @@
 #define AUDIT_DISABLED		-1
 #define AUDIT_UNINITIALIZED	0
 #define AUDIT_INITIALIZED	1
-static int	audit_initialized;
+static int	audit_initialized = AUDIT_DISABLED;
 
 #define AUDIT_OFF	0
 #define AUDIT_ON	1
@@ -395,7 +395,7 @@ static void audit_printk_skb(struct sk_buff *skb)
 
 	if (nlh->nlmsg_type != AUDIT_EOE) {
 		if (printk_ratelimit())
-			pr_notice("type=%d %s\n", nlh->nlmsg_type, data);
+			pr_debug("type=%d %s\n", nlh->nlmsg_type, data);
 		else
 			audit_log_lost("printk limit exceeded");
 	}

@@ -15,6 +15,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/kernel.h>
 #include <linux/blkdev.h>
 #include <linux/blktrace_api.h>
@@ -480,6 +483,16 @@ int do_blk_trace_setup(struct request_queue *q, char *name, dev_t dev,
 	 * to underscores for this to work as expected
 	 */
 	strreplace(buts->name, '/', '_');
+
+	/*
+	 * bdev can be NULL, as with scsi-generic, this is a helpful as
+	 * we can be.
+	 */
+	if (q->blk_trace) {
+		pr_warn("Concurrent blktraces are not allowed on %s\n",
+			buts->name);
+		return -EBUSY;
+	}
 
 	bt = kzalloc(sizeof(*bt), GFP_KERNEL);
 	if (!bt)
@@ -1545,12 +1558,12 @@ static struct trace_event trace_blk_event = {
 static int __init init_blk_tracer(void)
 {
 	if (!register_trace_event(&trace_blk_event)) {
-		pr_warning("Warning: could not register block events\n");
+		pr_warn("Warning: could not register block events\n");
 		return 1;
 	}
 
 	if (register_tracer(&blk_tracer) != 0) {
-		pr_warning("Warning: could not register the block tracer\n");
+		pr_warn("Warning: could not register the block tracer\n");
 		unregister_trace_event(&trace_blk_event);
 		return 1;
 	}

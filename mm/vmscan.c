@@ -166,7 +166,7 @@ struct scan_control {
 /*
  * Kswapd swappiness, from 0 - 200.  Higher means more swappy.
  */
-int vm_swappiness = 0;
+int vm_swappiness = 150;
 #ifdef CONFIG_HISI_DIRECT_SWAPPINESS
 /*
  * Direct reclaim swappiness, exptct 0 - 60. Higher means more swappy and slower.
@@ -3762,7 +3762,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
 
 		/* Check if kswapd should be suspending */
 		if (try_to_freeze() || kthread_should_stop() ||
-		    !atomic_read(&pgdat->kswapd_waiters))
+		    !atomic_long_read(&kswapd_waiters))
 			break;
 
 		/*
